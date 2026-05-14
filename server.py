@@ -12,12 +12,14 @@ PYPILOT_PORT = 23322
 MODE_FROM_PYPILOT = {'compass': 'auto', 'wind': 'wind', 'gps': 'nav', 'level': 'level', 'true wind': 'wind'}
 MODE_TO_PYPILOT   = {'auto': 'compass', 'wind': 'wind', 'nav': 'gps', 'level': 'level'}
 
-GAIN_NAMES = ['P', 'I', 'D', 'DD']
+GAIN_NAMES = ['P', 'I', 'D', 'DD', 'FF', 'PR']
 GAIN_DEFAULTS = {
     'P':  {'min': 0.0, 'max': 3.0},
     'I':  {'min': 0.0, 'max': 1.0},
     'D':  {'min': 0.0, 'max': 5.0},
     'DD': {'min': 0.0, 'max': 5.0},
+    'FF': {'min': 0.0, 'max': 3.0},
+    'PR': {'min': 0.0, 'max': 5.0},
 }
 
 # key → update period in seconds

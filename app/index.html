@@ -593,6 +593,22 @@
       <div class="gain-max" id="gmax-DD">5.0</div>
     </div>
 
+    <div class="gain-row">
+      <div class="gain-label">FF<span class="gain-desc">Feed Forward</span></div>
+      <div class="gain-val" id="gv-FF">—</div>
+      <input class="gain-slider" id="gs-FF" type="range" min="0" max="3" step="0.01"
+             oninput="onGain('FF', this.value)">
+      <div class="gain-max" id="gmax-FF">3.0</div>
+    </div>
+
+    <div class="gain-row">
+      <div class="gain-label">PR<span class="gain-desc">Prop. Roll</span></div>
+      <div class="gain-val" id="gv-PR">—</div>
+      <input class="gain-slider" id="gs-PR" type="range" min="0" max="5" step="0.01"
+             oninput="onGain('PR', this.value)">
+      <div class="gain-max" id="gmax-PR">5.0</div>
+    </div>
+
   </div>
 </div>
 
@@ -854,12 +870,15 @@ function adjust(delta) {
 // ── Gains page ───────────────────────────────────────────────────────────────
 let gainsDirty = {};   // slider being dragged — don't overwrite from server
 
-function openGains()  { document.getElementById('gains-overlay').classList.add('open'); }
+function openGains()  {
+  document.getElementById('gains-overlay').classList.add('open');
+  renderGains();
+}
 function closeGains() { document.getElementById('gains-overlay').classList.remove('open'); gainsDirty = {}; }
 
 function renderGains() {
   const gains = state.gains;
-  ['P', 'I', 'D', 'DD'].forEach(n => {
+  ['P', 'I', 'D', 'DD', 'FF', 'PR'].forEach(n => {
     const g = gains[n];
     if (!g) return;
     const slider = document.getElementById('gs-' + n);
