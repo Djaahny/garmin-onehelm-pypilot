@@ -1,6 +1,6 @@
 from flask import Flask, send_from_directory
 from flask_sock import Sock
-import threading, time, json, socket as tcp
+import threading, time, json, socket as tcp, urllib.request
 
 app = Flask(__name__, static_folder=None)
 sock = Sock(app)
@@ -36,6 +36,7 @@ WATCH_PERIODS = {
 
 class PypilotClient:
     def __init__(self):
+        self._gain_key_map = {}   # gain_name → actual pypilot key, e.g. 'P' → 'ap.gains.P'
         self._state = {
             'heading':      0.0,
             'course':       0.0,
@@ -65,7 +66,41 @@ class PypilotClient:
                 self._state['message'] = 'Reconnecting to pypilot…'
             time.sleep(3)
 
+    def _discover_gains(self):
+        """Fetch pypilot HTTP API to find real gain key names and ranges."""
+        try:
+            url = f'http://{PYPILOT_HOST}:8080/values'
+            resp = urllib.request.urlopen(url, timeout=4)
+            all_vals = json.loads(resp.read().decode())
+        except Exception as e:
+            print(f'[pypilot] HTTP discovery failed: {e}')
+            return
+
+        gain_keys = {k: v for k, v in all_vals.items() if 'gain' in k.lower()}
+        if not gain_keys:
+            ap_keys = sorted(k for k in all_vals if k.startswith('ap.'))
+            print(f'[pypilot] No gain keys via HTTP. ap.* keys: {ap_keys}')
+            return
+
+        print(f'[pypilot] Gain keys discovered: {list(gain_keys.keys())}')
+        new_map = {}
+        with self._state_lock:
+            for key, info in gain_keys.items():
+                gain_name = key.split('.')[-1].upper()
+                if gain_name not in GAIN_NAMES:
+                    continue
+                new_map[gain_name] = key
+                if isinstance(info, dict):
+                    if 'min' in info:
+                        self._state['gains'][gain_name]['min'] = float(info['min'])
+                    if 'max' in info:
+                        self._state['gains'][gain_name]['max'] = float(info['max'])
+        self._gain_key_map = new_map
+        print(f'[pypilot] Gain key map: {new_map}')
+
     def _connect(self):
+        self._discover_gains()
+
         s = tcp.socket(tcp.AF_INET, tcp.SOCK_STREAM)
         s.settimeout(10)
         s.connect((PYPILOT_HOST, PYPILOT_PORT))
@@ -77,8 +112,15 @@ class PypilotClient:
         with self._state_lock:
             self._state['message'] = 'Connected to pypilot'
 
-        # pypilot wire format: watch={"key":{"period":0.25}, ...}
-        watch_msg = 'watch=' + json.dumps(WATCH_PERIODS) + '\n'
+        # Build watch dict — use discovered gain keys, fall back to defaults
+        watch = dict(WATCH_PERIODS)
+        for name in GAIN_NAMES:
+            default_key = f'ap.gains.{name}'
+            real_key    = self._gain_key_map.get(name, default_key)
+            watch.pop(default_key, None)
+            watch[real_key] = 1.0
+
+        watch_msg = 'watch=' + json.dumps(watch) + '\n'
         print(f'[pypilot] SEND: {watch_msg.strip()}')
         s.sendall(watch_msg.encode('utf-8'))
 
@@ -133,9 +175,8 @@ class PypilotClient:
                     self._state['rudder_angle'] = float(val_str)
                     print(f'[pypilot] rudder={self._state["rudder_angle"]}')
                 elif 'gain' in key.lower():
-                    # log every gain-like key so we can see the real names
                     print(f'[pypilot] GAIN KEY: {key}={val_str}')
-                    gain_name = key.split('.')[-1]
+                    gain_name = key.split('.')[-1].upper()
                     if gain_name in self._state['gains']:
                         self._state['gains'][gain_name]['value'] = float(val_str)
                 elif key == 'values':
@@ -261,7 +302,8 @@ def handle_cmd(msg):
         name  = msg.get('name')
         value = msg.get('value')
         if name in GAIN_NAMES and value is not None:
-            pilot.set(f'ap.gains.{name}', round(float(value), 3))
+            real_key = pilot._gain_key_map.get(name, f'ap.gains.{name}')
+            pilot.set(real_key, round(float(value), 3))
 
 
 # ── Routes ───────────────────────────────────────────────────────────────────
