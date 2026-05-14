@@ -175,6 +175,9 @@ def handle_cmd(msg):
     val = msg.get('value')
 
     if cmd == 'engage':
+        with pilot._state_lock:
+            current_heading = pilot._state['heading']
+        pilot.set('ap.heading_command', round(current_heading, 1))
         pilot.set('ap.enabled', True)
     elif cmd == 'standby':
         pilot.set('ap.enabled', False)
