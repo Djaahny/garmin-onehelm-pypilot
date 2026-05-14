@@ -1,171 +1,564 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-  <title>Garmin Live Dashboard</title>
-
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1">
-
+  <meta charset="utf-8">
+  <title>pypilot</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
   <style>
-    body {
-      margin: 0;
-      background: #081018;
-      color: white;
-      font-family: sans-serif;
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #060e18;
+      --panel:     #0c1e30;
+      --border:    #1a3a55;
+      --accent:    #1e90ff;
+      --green:     #00e676;
+      --red:       #ff3d3d;
+      --amber:     #ffab00;
+      --text:      #cde4f5;
+      --dim:       #4a7090;
+      --engaged-bg:#0a3020;
+      --standby-bg:#1a0a0a;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Arial', sans-serif;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+
+    /* ── Layout ── */
+    #app {
+      display: grid;
+      grid-template-rows: 56px 1fr 90px;
+      height: 100vh;
+    }
+
+    /* ── Header ── */
+    #header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      background: var(--panel);
+      border-bottom: 2px solid var(--border);
+    }
+
+    #title {
+      font-size: 26px;
+      font-weight: bold;
+      color: var(--accent);
+      letter-spacing: 2px;
+    }
+
+    #ws-status {
+      font-size: 14px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: #1a0a0a;
+      color: var(--red);
+      transition: all 0.3s;
+    }
+    #ws-status.connected { background: #0a2015; color: var(--green); }
+
+    /* ── Main content ── */
+    #main {
+      display: grid;
+      grid-template-columns: 1fr 220px 1fr;
+      gap: 0;
       overflow: hidden;
     }
 
-    .header {
-      background: #102030;
-      padding: 20px 30px;
-      font-size: 42px;
-      color: #60c8ff;
-      border-bottom: 2px solid #204060;
+    /* ── Compass panel ── */
+    #compass-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      border-right: 1px solid var(--border);
     }
 
-    .container {
+    #compass-svg {
+      width: min(340px, 90vw, 45vh);
+      height: min(340px, 90vw, 45vh);
+      filter: drop-shadow(0 0 16px rgba(30,144,255,0.3));
+    }
+
+    /* ── Center data panel ── */
+    #data-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-evenly;
+      padding: 10px 8px;
+      border-right: 1px solid var(--border);
+    }
+
+    .data-block {
+      text-align: center;
+      width: 100%;
+    }
+
+    .data-label {
+      font-size: 13px;
+      color: var(--dim);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .data-value {
+      font-size: 56px;
+      font-weight: bold;
+      line-height: 1;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .data-value.heading { color: #60d8ff; }
+    .data-value.course  { color: var(--green); }
+
+    .data-unit {
+      font-size: 20px;
+      color: var(--dim);
+    }
+
+    .divider {
+      width: 80%;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Controls panel ── */
+    #controls-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-evenly;
+      padding: 12px 16px;
+    }
+
+    /* Engage button */
+    #engage-btn {
+      width: 100%;
+      padding: 18px 0;
+      border-radius: 14px;
+      border: 3px solid var(--red);
+      background: var(--standby-bg);
+      color: var(--red);
+      font-size: 22px;
+      font-weight: bold;
+      letter-spacing: 3px;
+      cursor: pointer;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #engage-btn.engaged {
+      border-color: var(--green);
+      background: var(--engaged-bg);
+      color: var(--green);
+    }
+
+    #engage-btn:active { opacity: 0.7; transform: scale(0.97); }
+
+    /* Mode buttons */
+    #mode-buttons {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      padding: 24px;
-    }
-
-    .card {
-      background: #102030;
-      border-radius: 20px;
-      padding: 30px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.4);
-    }
-
-    .label {
-      font-size: 28px;
-      color: #8fbcd4;
-      margin-bottom: 10px;
-    }
-
-    .value {
-      font-size: 96px;
-      font-weight: bold;
-      color: #60ffb0;
-    }
-
-    .small {
-      font-size: 24px;
-      color: #8fbcd4;
-    }
-
-    .status {
-      margin-top: 16px;
-      font-size: 24px;
-      color: #60c8ff;
-    }
-
-    canvas {
+      gap: 8px;
       width: 100%;
-      height: 200px;
-      background: #081018;
-      border-radius: 12px;
     }
+
+    .mode-btn {
+      padding: 14px 0;
+      border-radius: 10px;
+      border: 2px solid var(--border);
+      background: var(--panel);
+      color: var(--dim);
+      font-size: 16px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .mode-btn.active {
+      border-color: var(--accent);
+      background: #0a1e35;
+      color: var(--accent);
+    }
+
+    .mode-btn:active { opacity: 0.7; }
+
+    /* Adjust buttons */
+    #adjust-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 6px;
+      width: 100%;
+    }
+
+    .adj-btn {
+      padding: 16px 0;
+      border-radius: 10px;
+      border: 2px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      font-size: 17px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .adj-btn.port  { border-color: #ff6060; color: #ff6060; }
+    .adj-btn.stbd  { border-color: var(--green); color: var(--green); }
+    .adj-btn:active { opacity: 0.6; transform: scale(0.95); }
+
+    /* ── Mode bar ── */
+    #mode-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 16px;
+      background: var(--panel);
+      border-top: 1px solid var(--border);
+    }
+
+    #autopilot-msg {
+      font-size: 15px;
+      color: var(--amber);
+      letter-spacing: 1px;
+      flex: 1;
+      text-align: center;
+    }
+
+    /* Tack/Gybe buttons */
+    .special-btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: 2px solid var(--amber);
+      background: transparent;
+      color: var(--amber);
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .special-btn:active { opacity: 0.6; }
   </style>
 </head>
-
 <body>
 
-<div class="header">
-  Garmin OneHelm Live Dashboard
-</div>
+<div id="app">
 
-<div class="container">
-
-  <div class="card">
-    <div class="label">Live Value</div>
-    <div class="value" id="value">0.0</div>
-    <div class="small">WebSocket realtime data</div>
+  <!-- Header -->
+  <div id="header">
+    <div id="title">PYPILOT</div>
+    <div id="ws-status">OFFLINE</div>
   </div>
 
-  <div class="card">
-    <div class="label">Browser Info</div>
+  <!-- Main -->
+  <div id="main">
 
-    <div class="small" id="ua"></div>
+    <!-- Compass -->
+    <div id="compass-panel">
+      <svg id="compass-svg" viewBox="-160 -160 320 320" xmlns="http://www.w3.org/2000/svg">
+        <!-- Outer bezel -->
+        <circle cx="0" cy="0" r="155" fill="#070f1a" stroke="#1a3a55" stroke-width="3"/>
+        <circle cx="0" cy="0" r="148" fill="none" stroke="#0d2035" stroke-width="1"/>
 
-    <div class="status" id="status">
-      Connecting...
+        <!-- Rotating compass disc -->
+        <g id="disc">
+          <!-- Degree ring background -->
+          <circle cx="0" cy="0" r="143" fill="#0a1825" stroke="none"/>
+
+          <!-- Tick marks and labels generated by JS -->
+          <g id="ticks"></g>
+
+          <!-- Cardinal / intercardinal points -->
+          <g id="cardinals"></g>
+
+          <!-- Wind indicator (apparent wind) -->
+          <g id="wind-indicator" opacity="0">
+            <line id="wind-line" x1="0" y1="0" x2="0" y2="-105"
+                  stroke="#ffab00" stroke-width="3" stroke-dasharray="6 4"/>
+            <polygon id="wind-arrow" points="0,-110 -6,-96 6,-96" fill="#ffab00"/>
+          </g>
+        </g>
+
+        <!-- Fixed elements over disc -->
+        <!-- North indicator ring -->
+        <circle cx="0" cy="0" r="120" fill="none" stroke="#0d2035" stroke-width="1"/>
+        <!-- Center dot -->
+        <circle cx="0" cy="0" r="8" fill="#1e90ff"/>
+        <circle cx="0" cy="0" r="4" fill="#060e18"/>
+
+        <!-- Lubber line (fixed, points to top = bow) -->
+        <rect x="-3" y="-155" width="6" height="20" fill="#ff3d3d" rx="2"/>
+
+        <!-- Heading pointer (bow direction, fixed at top) -->
+        <polygon points="0,-118 -10,-100 10,-100" fill="#1e90ff" opacity="0.9"/>
+        <polygon points="0,-118 -10,-100 10,-100" fill="none" stroke="#60d8ff" stroke-width="1.5"/>
+
+        <!-- Course pointer (where we want to go, rotates relative to heading) -->
+        <g id="course-pointer">
+          <polygon points="0,-118 -8,-102 8,-102" fill="none" stroke="#00e676" stroke-width="2.5" stroke-dasharray="5 3"/>
+        </g>
+      </svg>
     </div>
+
+    <!-- Data panel -->
+    <div id="data-panel">
+      <div class="data-block">
+        <div class="data-label">HDG</div>
+        <div class="data-value heading" id="hdg-val">---</div>
+        <div class="data-unit">°</div>
+      </div>
+      <div class="divider"></div>
+      <div class="data-block">
+        <div class="data-label">COURSE</div>
+        <div class="data-value course" id="crs-val">---</div>
+        <div class="data-unit">°</div>
+      </div>
+      <div class="divider"></div>
+      <div class="data-block">
+        <div class="data-label">ERROR</div>
+        <div class="data-value" id="err-val" style="font-size:36px; color:var(--amber)">0.0°</div>
+      </div>
+    </div>
+
+    <!-- Controls panel -->
+    <div id="controls-panel">
+      <!-- Engage/Standby -->
+      <button id="engage-btn" onclick="toggleEngage()">STANDBY</button>
+
+      <!-- Mode selector -->
+      <div id="mode-buttons">
+        <button class="mode-btn active" data-mode="auto"  onclick="setMode('auto')">AUTO</button>
+        <button class="mode-btn"        data-mode="wind"  onclick="setMode('wind')">WIND</button>
+        <button class="mode-btn"        data-mode="nav"   onclick="setMode('nav')">NAV</button>
+        <button class="mode-btn"        data-mode="level" onclick="setMode('level')">LEVEL</button>
+      </div>
+
+      <!-- Course adjust -->
+      <div id="adjust-grid">
+        <button class="adj-btn port"  onclick="adjust(-10)">−10°</button>
+        <button class="adj-btn port"  onclick="adjust(-1)">−1°</button>
+        <button class="adj-btn stbd"  onclick="adjust(1)">+1°</button>
+        <button class="adj-btn stbd"  onclick="adjust(10)">+10°</button>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+
+  <!-- Footer / message bar -->
+  <div id="mode-bar">
+    <button class="special-btn" onclick="sendCmd('tack_port')">◀ TACK</button>
+    <div id="autopilot-msg">Waiting for pypilot…</div>
+    <button class="special-btn" onclick="sendCmd('tack_stbd')">TACK ▶</button>
   </div>
 
-  <div class="card" style="grid-column: span 2;">
-    <div class="label">Realtime Graph</div>
-
-    <canvas id="graph" width="1200" height="200"></canvas>
-  </div>
-
-</div>
+</div><!-- /app -->
 
 <script>
-const valueEl = document.getElementById("value");
-const statusEl = document.getElementById("status");
-const uaEl = document.getElementById("ua");
+// ── State ──────────────────────────────────────────────────────────────────
+const state = {
+  heading: 0,
+  course: 0,
+  mode: 'auto',
+  engaged: false,
+  wind_angle: null,
+  message: '',
+};
 
-uaEl.textContent = navigator.userAgent;
+// ── Compass setup ──────────────────────────────────────────────────────────
+function buildCompass() {
+  const ticks = document.getElementById('ticks');
+  const cards = document.getElementById('cardinals');
 
-const canvas = document.getElementById("graph");
-const ctx = canvas.getContext("2d");
+  for (let deg = 0; deg < 360; deg += 5) {
+    const rad = (deg - 90) * Math.PI / 180;
+    const isMajor = deg % 30 === 0;
+    const isMed   = deg % 10 === 0;
+    const r1 = 143;
+    const r2 = isMajor ? 118 : isMed ? 126 : 132;
+    const x1 = Math.cos(rad) * r1;
+    const y1 = Math.sin(rad) * r1;
+    const x2 = Math.cos(rad) * r2;
+    const y2 = Math.sin(rad) * r2;
 
-const values = [];
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    line.setAttribute('stroke', isMajor ? '#4a8aaa' : '#1e4060');
+    line.setAttribute('stroke-width', isMajor ? '2' : '1');
+    ticks.appendChild(line);
 
-function drawGraph() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (isMajor && deg % 30 === 0) {
+      const tr = 108;
+      const tx = Math.cos(rad) * tr;
+      const ty = Math.sin(rad) * tr;
+      const label = document.createElementNS('http://www.w3.org/2000/svg','text');
+      label.setAttribute('x', tx); label.setAttribute('y', ty);
+      label.setAttribute('text-anchor', 'middle');
+      label.setAttribute('dominant-baseline', 'central');
+      label.setAttribute('fill', '#3a7090');
+      label.setAttribute('font-size', '12');
+      label.setAttribute('font-family', 'Arial');
+      label.setAttribute('transform', `rotate(${deg},${tx},${ty})`);
+      label.textContent = String(deg).padStart(3,'0');
+      ticks.appendChild(label);
+    }
+  }
 
-  ctx.strokeStyle = "#60c8ff";
-  ctx.lineWidth = 4;
+  const compass_pts = [
+    [0,   'N',  '#ff4444', 20],
+    [90,  'E',  '#cde4f5', 16],
+    [180, 'S',  '#cde4f5', 16],
+    [270, 'W',  '#cde4f5', 16],
+    [45,  'NE', '#8ab8d0', 13],
+    [135, 'SE', '#8ab8d0', 13],
+    [225, 'SW', '#8ab8d0', 13],
+    [315, 'NW', '#8ab8d0', 13],
+  ];
 
-  ctx.beginPath();
-
-  values.forEach((v, i) => {
-    const x = i * (canvas.width / 100);
-    const y = canvas.height - (v / 100) * canvas.height;
-
-    if (i === 0)
-      ctx.moveTo(x, y);
-    else
-      ctx.lineTo(x, y);
+  compass_pts.forEach(([deg, label, fill, size]) => {
+    const rad = (deg - 90) * Math.PI / 180;
+    const r = 88;
+    const tx = Math.cos(rad) * r;
+    const ty = Math.sin(rad) * r;
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x', tx); t.setAttribute('y', ty);
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('dominant-baseline', 'central');
+    t.setAttribute('fill', fill);
+    t.setAttribute('font-size', String(size));
+    t.setAttribute('font-weight', 'bold');
+    t.setAttribute('font-family', 'Arial');
+    t.setAttribute('transform', `rotate(${deg},${tx},${ty})`);
+    t.textContent = label;
+    cards.appendChild(t);
   });
-
-  ctx.stroke();
 }
 
-const ws = new WebSocket(
-  "ws://" + location.host + "/ws"
-);
+buildCompass();
 
-ws.onopen = () => {
-  statusEl.textContent = "WebSocket connected";
-  statusEl.style.color = "#60ffb0";
-};
+// ── Render ──────────────────────────────────────────────────────────────────
+function render() {
+  const disc = document.getElementById('disc');
+  disc.setAttribute('transform', `rotate(${-state.heading})`);
 
-ws.onclose = () => {
-  statusEl.textContent = "WebSocket disconnected";
-  statusEl.style.color = "#ff8080";
-};
+  document.getElementById('hdg-val').textContent =
+    Math.round(state.heading).toString().padStart(3,'0');
+  document.getElementById('crs-val').textContent =
+    Math.round(state.course).toString().padStart(3,'0');
 
-ws.onerror = () => {
-  statusEl.textContent = "WebSocket error";
-  statusEl.style.color = "#ff8080";
-};
+  let err = state.course - state.heading;
+  if (err > 180)  err -= 360;
+  if (err < -180) err += 360;
+  const errEl = document.getElementById('err-val');
+  errEl.textContent = (err >= 0 ? '+' : '') + err.toFixed(1) + '°';
+  errEl.style.color = Math.abs(err) < 3 ? 'var(--green)' :
+                      Math.abs(err) < 10 ? 'var(--amber)' : 'var(--red)';
 
-ws.onmessage = (ev) => {
-  const data = JSON.parse(ev.data);
+  // Course pointer: offset from heading
+  const courseOffset = state.course - state.heading;
+  const cp = document.getElementById('course-pointer');
+  cp.setAttribute('transform', `rotate(${courseOffset})`);
 
-  valueEl.textContent =
-    data.value.toFixed(1);
+  // Wind indicator
+  const wi = document.getElementById('wind-indicator');
+  if (state.wind_angle !== null) {
+    wi.setAttribute('opacity', '1');
+    wi.setAttribute('transform', `rotate(${state.wind_angle})`);
+  } else {
+    wi.setAttribute('opacity', '0');
+  }
 
-  values.push(data.value);
+  // Engage button
+  const engBtn = document.getElementById('engage-btn');
+  if (state.engaged) {
+    engBtn.textContent = 'ENGAGED';
+    engBtn.classList.add('engaged');
+  } else {
+    engBtn.textContent = 'STANDBY';
+    engBtn.classList.remove('engaged');
+  }
 
-  if (values.length > 100)
-    values.shift();
+  // Mode buttons
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === state.mode);
+  });
 
-  drawGraph();
-};
+  // Message
+  if (state.message) {
+    document.getElementById('autopilot-msg').textContent = state.message;
+  }
+}
+
+// ── WebSocket ───────────────────────────────────────────────────────────────
+let ws = null;
+let reconnectTimer = null;
+
+function connect() {
+  ws = new WebSocket('ws://' + location.host + '/ws');
+  const statusEl = document.getElementById('ws-status');
+
+  ws.onopen = () => {
+    statusEl.textContent = 'ONLINE';
+    statusEl.classList.add('connected');
+    clearTimeout(reconnectTimer);
+  };
+
+  ws.onclose = () => {
+    statusEl.textContent = 'OFFLINE';
+    statusEl.classList.remove('connected');
+    reconnectTimer = setTimeout(connect, 3000);
+  };
+
+  ws.onerror = () => ws.close();
+
+  ws.onmessage = (ev) => {
+    const d = JSON.parse(ev.data);
+    if (d.heading     !== undefined) state.heading    = d.heading;
+    if (d.course      !== undefined) state.course     = d.course;
+    if (d.mode        !== undefined) state.mode       = d.mode;
+    if (d.engaged     !== undefined) state.engaged    = d.engaged;
+    if (d.wind_angle  !== undefined) state.wind_angle = d.wind_angle;
+    if (d.message     !== undefined) state.message    = d.message;
+    render();
+  };
+}
+
+function sendCmd(type, value) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(value !== undefined ? {cmd: type, value} : {cmd: type}));
+  }
+}
+
+// ── Controls ────────────────────────────────────────────────────────────────
+function toggleEngage() {
+  sendCmd(state.engaged ? 'standby' : 'engage');
+}
+
+function setMode(mode) {
+  sendCmd('mode', mode);
+}
+
+function adjust(delta) {
+  sendCmd('adjust', delta);
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+render();
+connect();
 </script>
 
 </body>
