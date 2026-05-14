@@ -72,7 +72,10 @@ class PypilotClient:
                 line, buf = buf.split('\n', 1)
                 line = line.strip()
                 if line:
-                    self._handle(json.loads(line))
+                    try:
+                        self._handle(json.loads(line))
+                    except ValueError:
+                        pass  # skip non-JSON lines (e.g. version greeting)
 
         with self._sock_lock:
             self._sock = None
