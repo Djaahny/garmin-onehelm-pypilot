@@ -109,19 +109,17 @@ class PypilotClient:
         with self._state_lock:
             self._state['message'] = 'Connected to pypilot'
 
-        # Watch base values + pilot name so we can derive gain namespace
+        # Watch base values + pilot name + all gain key patterns we know of
         watch = dict(WATCH_PERIODS)
         watch['ap.pilot'] = 1.0
+        # Try gain keys both bare and prefixed with 'basic' (the known active pilot)
+        for name in GAIN_NAMES:
+            watch[f'ap.gains.{name}']       = 1.0
+            watch[f'ap.gains.basic.{name}'] = 1.0
 
         watch_msg = 'watch=' + json.dumps(watch) + '\n'
         print(f'[pypilot] SEND: {watch_msg.strip()}')
         s.sendall(watch_msg.encode('utf-8'))
-
-        # GET the gain values directly — bypasses watch; reveals real key names
-        get_keys = {f'ap.gains.{n}': 1 for n in GAIN_NAMES}
-        get_msg = 'get=' + json.dumps(get_keys) + '\n'
-        print(f'[pypilot] SEND: {get_msg.strip()}')
-        s.sendall(get_msg.encode('utf-8'))
 
         buf = ''
         while True:
@@ -169,12 +167,22 @@ class PypilotClient:
                     self._state['mode'] = MODE_FROM_PYPILOT.get(val_str, val_str)
                     print(f'[pypilot] mode={self._state["mode"]} (raw={val_str})')
                 elif key == 'wind.direction':
-                    self._state['wind_angle'] = float(val_str)
+                    if val_str.lower() in ('false', 'none', 'null', ''):
+                        self._state['wind_angle'] = None
+                    else:
+                        self._state['wind_angle'] = float(val_str)
                 elif key == 'rudder.angle':
                     self._state['rudder_angle'] = float(val_str)
                     print(f'[pypilot] rudder={self._state["rudder_angle"]}')
                 elif key == 'ap.pilot':
-                    print(f'[pypilot] active pilot algorithm: {val_str}')
+                    pilot_name = val_str.strip('"').strip("'")
+                    print(f'[pypilot] active pilot: {pilot_name}')
+                    # Send watch for pilot-prefixed gain keys
+                    gain_watch = {}
+                    for n in GAIN_NAMES:
+                        gain_watch[f'ap.gains.{pilot_name}.{n}'] = 1.0
+                        gain_watch[f'ap.{pilot_name}.gains.{n}'] = 1.0
+                    self._send_raw('watch=' + json.dumps(gain_watch) + '\n')
                 elif 'gain' in key.lower():
                     print(f'[pypilot] GAIN KEY: {key}={val_str}')
                     gain_name = key.split('.')[-1].upper()
