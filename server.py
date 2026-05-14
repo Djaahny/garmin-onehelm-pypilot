@@ -1,85 +1,164 @@
 from flask import Flask, send_from_directory
 from flask_sock import Sock
-import threading, time, json, math
+import threading, time, json, socket as tcp
 
 app = Flask(__name__, static_folder=None)
 sock = Sock(app)
 
-# ── Simulated pypilot state ────────────────────────────────────────────────
-pilot = {
-    'heading':    247.0,
-    'course':     247.0,
-    'mode':       'auto',
-    'engaged':    False,
-    'wind_angle': 42.0,
-    'lock':       threading.Lock(),
-}
+PYPILOT_HOST = '192.168.1.5'
+PYPILOT_PORT = 23322
 
-def simulate():
-    t = 0
-    while True:
-        time.sleep(0.1)
-        t += 0.1
-        with pilot['lock']:
-            wander = 0.08 * math.sin(t * 0.3) + 0.03 * math.sin(t * 1.1)
-            pilot['heading'] = (pilot['heading'] + wander) % 360
+# pypilot mode names → UI mode names (and reverse)
+MODE_FROM_PYPILOT = {'compass': 'auto', 'wind': 'wind', 'gps': 'nav', 'level': 'level', 'true wind': 'wind'}
+MODE_TO_PYPILOT   = {'auto': 'compass', 'wind': 'wind', 'nav': 'gps', 'level': 'level'}
 
-            if pilot['engaged']:
-                err = pilot['course'] - pilot['heading']
-                if err >  180: err -= 360
-                if err < -180: err += 360
-                correction = max(-2.0, min(2.0, err * 0.25))
-                pilot['heading'] = (pilot['heading'] + correction) % 360
-
-            pilot['wind_angle'] = (pilot['wind_angle'] + 0.02 * math.sin(t * 0.07)) % 360
-
-threading.Thread(target=simulate, daemon=True).start()
+WATCH_VALUES = [
+    'ap.heading',
+    'ap.heading_command',
+    'ap.enabled',
+    'ap.mode',
+    'wind.direction',
+]
 
 
-def state_snapshot():
-    with pilot['lock']:
-        err = pilot['course'] - pilot['heading']
+class PypilotClient:
+    def __init__(self):
+        self._state = {
+            'heading':    0.0,
+            'course':     0.0,
+            'mode':       'auto',
+            'engaged':    False,
+            'wind_angle': None,
+            'message':    'Connecting to pypilot…',
+        }
+        self._state_lock = threading.Lock()
+        self._sock       = None
+        self._sock_lock  = threading.Lock()
+        threading.Thread(target=self._run, daemon=True).start()
+
+    # ── Connection loop ──────────────────────────────────────────────────────
+    def _run(self):
+        while True:
+            try:
+                self._connect()
+            except Exception as e:
+                print(f'pypilot: {e}')
+            with self._state_lock:
+                self._state['message'] = 'Reconnecting to pypilot…'
+            time.sleep(3)
+
+    def _connect(self):
+        s = tcp.socket(tcp.AF_INET, tcp.SOCK_STREAM)
+        s.settimeout(10)
+        s.connect((PYPILOT_HOST, PYPILOT_PORT))
+        s.settimeout(30)
+
+        with self._sock_lock:
+            self._sock = s
+
+        with self._state_lock:
+            self._state['message'] = 'Connected to pypilot'
+
+        for name in WATCH_VALUES:
+            self._send({'method': 'watch', 'name': name, 'value': {'period': 0.25}})
+
+        buf = ''
+        while True:
+            chunk = s.recv(4096).decode('utf-8', errors='ignore')
+            if not chunk:
+                break
+            buf += chunk
+            while '\n' in buf:
+                line, buf = buf.split('\n', 1)
+                line = line.strip()
+                if line:
+                    self._handle(json.loads(line))
+
+        with self._sock_lock:
+            self._sock = None
+
+    def _handle(self, msg):
+        with self._state_lock:
+            if 'ap.heading' in msg:
+                self._state['heading'] = float(msg['ap.heading'])
+            if 'ap.heading_command' in msg:
+                self._state['course'] = float(msg['ap.heading_command'])
+            if 'ap.enabled' in msg:
+                self._state['engaged'] = bool(msg['ap.enabled'])
+            if 'ap.mode' in msg:
+                raw = msg['ap.mode']
+                self._state['mode'] = MODE_FROM_PYPILOT.get(raw, raw)
+            if 'wind.direction' in msg:
+                self._state['wind_angle'] = float(msg['wind.direction'])
+
+    # ── Outgoing commands ────────────────────────────────────────────────────
+    def _send(self, msg):
+        with self._sock_lock:
+            if self._sock:
+                try:
+                    self._sock.sendall((json.dumps(msg) + '\n').encode())
+                except Exception:
+                    pass
+
+    def set(self, name, value):
+        self._send({'method': 'set', 'name': name, 'value': value})
+
+    # ── State snapshot for WebSocket push ────────────────────────────────────
+    def snapshot(self):
+        with self._state_lock:
+            s = dict(self._state)
+
+        err = s['course'] - s['heading']
         if err >  180: err -= 360
         if err < -180: err += 360
-        if not pilot['engaged']:
-            msg = 'STANDBY — pilot disengaged'
+
+        if 'pypilot' in s['message'].lower() or 'connect' in s['message'].lower():
+            pass  # keep connection message
+        elif not s['engaged']:
+            s['message'] = 'STANDBY — pilot disengaged'
         elif abs(err) < 2:
-            msg = 'On course'
+            s['message'] = 'On course'
         elif abs(err) < 10:
-            msg = f'Correcting {"port" if err < 0 else "stbd"} {abs(err):.1f}°'
+            s['message'] = f'Correcting {"port" if err < 0 else "stbd"} {abs(err):.1f}°'
         else:
-            msg = f'Large deviation {abs(err):.1f}° {"port" if err < 0 else "stbd"}'
-        return {
-            'heading':    round(pilot['heading'], 1),
-            'course':     round(pilot['course'],  1),
-            'mode':       pilot['mode'],
-            'engaged':    pilot['engaged'],
-            'wind_angle': round(pilot['wind_angle'], 1),
-            'message':    msg,
-        }
+            s['message'] = f'Large deviation {abs(err):.1f}° {"port" if err < 0 else "stbd"}'
+
+        s['heading']    = round(s['heading'], 1)
+        s['course']     = round(s['course'],  1)
+        s['wind_angle'] = round(s['wind_angle'], 1) if s['wind_angle'] is not None else None
+        return s
+
+
+pilot = PypilotClient()
 
 
 def handle_cmd(msg):
     cmd = msg.get('cmd')
     val = msg.get('value')
-    with pilot['lock']:
-        if cmd == 'engage':
-            pilot['engaged'] = True
-            pilot['course']  = round(pilot['heading'], 1)
-        elif cmd == 'standby':
-            pilot['engaged'] = False
-        elif cmd == 'mode':
-            if val in ('auto', 'wind', 'nav', 'level'):
-                pilot['mode'] = val
-        elif cmd == 'adjust':
-            pilot['course'] = (pilot['course'] + float(val)) % 360
-        elif cmd == 'tack_port':
-            pilot['course'] = (pilot['course'] - 100) % 360
-        elif cmd == 'tack_stbd':
-            pilot['course'] = (pilot['course'] + 100) % 360
+
+    if cmd == 'engage':
+        pilot.set('ap.enabled', True)
+    elif cmd == 'standby':
+        pilot.set('ap.enabled', False)
+    elif cmd == 'mode':
+        pypilot_mode = MODE_TO_PYPILOT.get(val)
+        if pypilot_mode:
+            pilot.set('ap.mode', pypilot_mode)
+    elif cmd == 'adjust':
+        with pilot._state_lock:
+            new_course = (pilot._state['course'] + float(val)) % 360
+        pilot.set('ap.heading_command', new_course)
+    elif cmd == 'tack_port':
+        with pilot._state_lock:
+            new_course = (pilot._state['course'] - 100) % 360
+        pilot.set('ap.heading_command', new_course)
+    elif cmd == 'tack_stbd':
+        with pilot._state_lock:
+            new_course = (pilot._state['course'] + 100) % 360
+        pilot.set('ap.heading_command', new_course)
 
 
-# ── Routes ──────────────────────────────────────────────────────────────────
+# ── Routes ───────────────────────────────────────────────────────────────────
 @app.route('/onehelm/config.json')
 def config():
     return send_from_directory('onehelm', 'config.json', mimetype='application/json')
@@ -94,25 +173,22 @@ def app_page():
     return send_from_directory('app', 'index.html')
 
 
-# ── WebSocket ────────────────────────────────────────────────────────────────
+# ── WebSocket ─────────────────────────────────────────────────────────────────
 @sock.route('/ws')
 def ws_handler(ws):
     stop = threading.Event()
 
-    # Push thread — sends state at 10 Hz
     def pusher():
         while not stop.is_set():
             try:
-                ws.send(json.dumps(state_snapshot()))
+                ws.send(json.dumps(pilot.snapshot()))
             except Exception:
                 stop.set()
                 return
             time.sleep(0.1)
 
-    t = threading.Thread(target=pusher, daemon=True)
-    t.start()
+    threading.Thread(target=pusher, daemon=True).start()
 
-    # Receive loop — handles commands from client
     try:
         while True:
             raw = ws.receive()
