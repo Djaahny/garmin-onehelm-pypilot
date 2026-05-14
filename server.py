@@ -132,12 +132,12 @@ class PypilotClient:
                 elif key == 'rudder.angle':
                     self._state['rudder_angle'] = float(val_str)
                     print(f'[pypilot] rudder={self._state["rudder_angle"]}')
-                elif key.startswith('ap.gains.'):
-                    # key = 'ap.gains.P' or 'ap.gains.DD'
-                    gain_name = key.split('.', 2)[2]
+                elif 'gain' in key.lower():
+                    # log every gain-like key so we can see the real names
+                    print(f'[pypilot] GAIN KEY: {key}={val_str}')
+                    gain_name = key.split('.')[-1]
                     if gain_name in self._state['gains']:
                         self._state['gains'][gain_name]['value'] = float(val_str)
-                        print(f'[pypilot] gain {gain_name}={val_str}')
                 elif key == 'values':
                     # initial handshake — extract gain min/max from descriptor
                     self._parse_values_descriptor(val_str)
@@ -150,12 +150,25 @@ class PypilotClient:
         try:
             desc = json.loads(val_str)
         except ValueError:
+            print(f'[pypilot] values= parse error')
             return
+
+        print(f'[pypilot] values descriptor: {len(desc)} keys total')
+
+        # Print every key that might be a gain
+        gain_keys = [k for k in desc if 'gain' in k.lower()]
+        if gain_keys:
+            print(f'[pypilot] GAIN KEYS FOUND: {gain_keys}')
+        else:
+            # Fall back: print everything under ap.* so we can spot the right names
+            ap_keys = sorted(k for k in desc if k.startswith('ap.'))
+            print(f'[pypilot] No gain keys found. ap.* keys: {ap_keys}')
+
         with self._state_lock:
             for key, info in desc.items():
-                if not key.startswith('ap.gains.'):
+                if 'gain' not in key.lower():
                     continue
-                gain_name = key.split('.', 2)[2]
+                gain_name = key.split('.')[-1]
                 if gain_name not in self._state['gains']:
                     continue
                 if isinstance(info, dict):
