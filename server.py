@@ -18,18 +18,20 @@ WATCH_VALUES = [
     'ap.enabled',
     'ap.mode',
     'wind.direction',
+    'rudder.angle',
 ]
 
 
 class PypilotClient:
     def __init__(self):
         self._state = {
-            'heading':    0.0,
-            'course':     0.0,
-            'mode':       'auto',
-            'engaged':    False,
-            'wind_angle': None,
-            'message':    'Connecting to pypilot…',
+            'heading':      0.0,
+            'course':       0.0,
+            'mode':         'auto',
+            'engaged':      False,
+            'wind_angle':   None,
+            'rudder_angle': None,
+            'message':      'Connecting to pypilot…',
         }
         self._state_lock = threading.Lock()
         self._sock       = None
@@ -112,6 +114,9 @@ class PypilotClient:
                     print(f'[pypilot] mode={self._state["mode"]} (raw={val_str})')
                 elif key == 'wind.direction':
                     self._state['wind_angle'] = float(val_str)
+                elif key == 'rudder.angle':
+                    self._state['rudder_angle'] = float(val_str)
+                    print(f'[pypilot] rudder={self._state["rudder_angle"]}')
                 else:
                     pass  # unrecognised key - visible in RECV log above
             except (ValueError, TypeError) as e:
@@ -157,7 +162,8 @@ class PypilotClient:
 
         s['heading']    = round(s['heading'], 1)
         s['course']     = round(s['course'],  1)
-        s['wind_angle'] = round(s['wind_angle'], 1) if s['wind_angle'] is not None else None
+        s['wind_angle']   = round(s['wind_angle'],   1) if s['wind_angle']   is not None else None
+        s['rudder_angle'] = round(s['rudder_angle'], 1) if s['rudder_angle'] is not None else None
         return s
 
 

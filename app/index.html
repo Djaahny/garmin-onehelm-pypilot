@@ -33,7 +33,7 @@
     /* ── Layout ── */
     #app {
       display: grid;
-      grid-template-rows: 56px 1fr 90px;
+      grid-template-rows: 56px 36px 1fr 70px;
       height: 100vh;
     }
 
@@ -83,9 +83,44 @@
     }
 
     #compass-svg {
-      width: min(340px, 90vw, 45vh);
-      height: min(340px, 90vw, 45vh);
+      width: min(300px, 90vw, 40vh);
+      height: min(300px, 90vw, 40vh);
       filter: drop-shadow(0 0 16px rgba(30,144,255,0.3));
+    }
+
+    #rudder-wrap {
+      width: 100%;
+      max-width: 300px;
+      margin-top: 10px;
+    }
+
+    #rudder-label {
+      font-size: 13px;
+      color: var(--dim);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+
+    #rudder-svg {
+      width: 100%;
+      display: block;
+    }
+
+    #status-strip {
+      background: #0a1825;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 6px 16px;
+      font-size: 15px;
+      color: var(--amber);
+      letter-spacing: 1px;
+      text-align: center;
+      grid-column: 1 / -1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     /* ── Center data panel ── */
@@ -264,6 +299,9 @@
     <div id="ws-status">OFFLINE</div>
   </div>
 
+  <!-- Status strip -->
+  <div id="status-strip">Waiting for pypilot…</div>
+
   <!-- Main -->
   <div id="main">
 
@@ -312,6 +350,36 @@
           <polygon points="0,-118 -8,-102 8,-102" fill="none" stroke="#00e676" stroke-width="2.5" stroke-dasharray="5 3"/>
         </g>
       </svg>
+      <!-- Rudder gauge -->
+      <div id="rudder-wrap">
+        <div id="rudder-label">RUDDER</div>
+        <svg id="rudder-svg" viewBox="-110 -10 220 70" xmlns="http://www.w3.org/2000/svg">
+          <!-- Background arc P→S -->
+          <path d="M -100 0 A 100 100 0 0 1 100 0" fill="none" stroke="#0d2035" stroke-width="14" stroke-linecap="round"/>
+          <!-- Port zone (red) -->
+          <path d="M -100 0 A 100 100 0 0 1 0 -100" fill="none" stroke="#3a0a0a" stroke-width="14" stroke-linecap="round"/>
+          <!-- Stbd zone (green) -->
+          <path d="M 0 -100 A 100 100 0 0 1 100 0" fill="none" stroke="#0a2a0a" stroke-width="14" stroke-linecap="round"/>
+          <!-- Active arc (fills from center toward rudder angle) -->
+          <path id="rudder-arc" d="" fill="none" stroke-width="10" stroke-linecap="round"/>
+          <!-- Center tick -->
+          <line x1="0" y1="-92" x2="0" y2="-108" stroke="#4a7090" stroke-width="2"/>
+          <!-- Port/stbd labels -->
+          <text x="-104" y="20" text-anchor="middle" fill="#ff6060" font-size="13" font-weight="bold">P</text>
+          <text x="104"  y="20" text-anchor="middle" fill="#00e676" font-size="13" font-weight="bold">S</text>
+          <!-- Degree ticks at 15° intervals -->
+          <g id="rudder-ticks"></g>
+          <!-- Needle -->
+          <line id="rudder-needle" x1="0" y1="0" x2="0" y2="-95"
+                stroke="white" stroke-width="3" stroke-linecap="round"
+                transform="rotate(0)"/>
+          <!-- Center hub -->
+          <circle cx="0" cy="0" r="5" fill="#1e90ff"/>
+          <!-- Value label -->
+          <text id="rudder-val" x="0" y="52" text-anchor="middle"
+                fill="white" font-size="20" font-weight="bold" font-family="Arial">--°</text>
+        </svg>
+      </div>
     </div>
 
     <!-- Data panel -->
@@ -358,11 +426,10 @@
 
   </div><!-- /main -->
 
-  <!-- Footer / message bar -->
+  <!-- Footer -->
   <div id="mode-bar">
-    <button class="special-btn" onclick="sendCmd('tack_port')">◀ TACK</button>
-    <div id="autopilot-msg">Waiting for pypilot…</div>
-    <button class="special-btn" onclick="sendCmd('tack_stbd')">TACK ▶</button>
+    <button class="special-btn" onclick="sendCmd('tack_port')">◀ TACK PORT</button>
+    <button class="special-btn" onclick="sendCmd('tack_stbd')">TACK STBD ▶</button>
   </div>
 
 </div><!-- /app -->
@@ -375,6 +442,7 @@ const state = {
   mode: 'auto',
   engaged: false,
   wind_angle: null,
+  rudder_angle: null,
   message: '',
 };
 
@@ -449,6 +517,44 @@ function buildCompass() {
 }
 
 buildCompass();
+buildRudderTicks();
+
+// ── Rudder gauge setup ─────────────────────────────────────────────────────
+function buildRudderTicks() {
+  const g = document.getElementById('rudder-ticks');
+  // Rudder arc spans -90° to +90° mapped to visual 180° semicircle
+  // 0° rudder = top of arc (270° in SVG), each rudder degree = 1 SVG degree
+  for (let rdeg = -45; rdeg <= 45; rdeg += 15) {
+    if (rdeg === 0) continue;
+    const svgDeg = rdeg - 90; // rotate: -90 maps rudder 0 to top
+    const rad = svgDeg * Math.PI / 180;
+    const r1 = 100, r2 = 92;
+    const x1 = Math.cos(rad) * r1, y1 = Math.sin(rad) * r1;
+    const x2 = Math.cos(rad) * r2, y2 = Math.sin(rad) * r2;
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',x1); line.setAttribute('y1',y1);
+    line.setAttribute('x2',x2); line.setAttribute('y2',y2);
+    line.setAttribute('stroke','#2a5070'); line.setAttribute('stroke-width','1.5');
+    g.appendChild(line);
+  }
+}
+
+// rudder angle → SVG arc path (0° = straight, + = stbd, - = port)
+function rudderArcPath(angle) {
+  const clamped = Math.max(-45, Math.min(45, angle));
+  if (Math.abs(clamped) < 0.5) return '';
+  const r = 100;
+  // Center of arc is at top (SVG angle -90°). Rudder 0 maps to -90°.
+  const startDeg = -90;
+  const endDeg   = startDeg + clamped;
+  const startRad = startDeg * Math.PI / 180;
+  const endRad   = endDeg   * Math.PI / 180;
+  const x1 = Math.cos(startRad) * r, y1 = Math.sin(startRad) * r;
+  const x2 = Math.cos(endRad)   * r, y2 = Math.sin(endRad)   * r;
+  const largeArc = Math.abs(clamped) > 180 ? 1 : 0;
+  const sweep    = clamped > 0 ? 1 : 0;
+  return `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} ${sweep} ${x2} ${y2}`;
+}
 
 // ── Render ──────────────────────────────────────────────────────────────────
 function render() {
@@ -497,9 +603,30 @@ function render() {
     btn.classList.toggle('active', btn.dataset.mode === state.mode);
   });
 
-  // Message
+  // Status strip
   if (state.message) {
-    document.getElementById('autopilot-msg').textContent = state.message;
+    const strip = document.getElementById('status-strip');
+    strip.textContent = state.message;
+    strip.style.color = !state.engaged         ? 'var(--dim)'   :
+                        state.message.includes('course') ? 'var(--green)' :
+                        state.message.includes('Large')  ? 'var(--red)'   : 'var(--amber)';
+  }
+
+  // Rudder gauge
+  const rudder = state.rudder_angle;
+  if (rudder !== null) {
+    const needle = document.getElementById('rudder-needle');
+    needle.setAttribute('transform', `rotate(${rudder})`);
+
+    const arc   = document.getElementById('rudder-arc');
+    const path  = rudderArcPath(rudder);
+    arc.setAttribute('d', path);
+    arc.setAttribute('stroke', rudder < 0 ? '#ff6060' : '#00e676');
+
+    const valEl = document.getElementById('rudder-val');
+    const sign  = rudder > 0.5 ? '+' : '';
+    valEl.textContent = sign + rudder.toFixed(1) + '°';
+    valEl.setAttribute('fill', rudder < -1 ? '#ff6060' : rudder > 1 ? '#00e676' : 'var(--dim)');
   }
 }
 
@@ -527,12 +654,13 @@ function connect() {
 
   ws.onmessage = (ev) => {
     const d = JSON.parse(ev.data);
-    if (d.heading     !== undefined) state.heading    = d.heading;
-    if (d.course      !== undefined) state.course     = d.course;
-    if (d.mode        !== undefined) state.mode       = d.mode;
-    if (d.engaged     !== undefined) state.engaged    = d.engaged;
-    if (d.wind_angle  !== undefined) state.wind_angle = d.wind_angle;
-    if (d.message     !== undefined) state.message    = d.message;
+    if (d.heading      !== undefined) state.heading      = d.heading;
+    if (d.course       !== undefined) state.course       = d.course;
+    if (d.mode         !== undefined) state.mode         = d.mode;
+    if (d.engaged      !== undefined) state.engaged      = d.engaged;
+    if (d.wind_angle   !== undefined) state.wind_angle   = d.wind_angle;
+    if (d.rudder_angle !== undefined) state.rudder_angle = d.rudder_angle;
+    if (d.message      !== undefined) state.message      = d.message;
     render();
   };
 }
