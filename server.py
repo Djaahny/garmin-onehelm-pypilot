@@ -109,25 +109,19 @@ class PypilotClient:
         with self._state_lock:
             self._state['message'] = 'Connected to pypilot'
 
-        # Request pypilot's full value list so we can discover gain key names
-        s.sendall(b'list=1\n')
-
-        # Build watch dict — base values + every plausible gain key pattern
+        # Watch base values + pilot name so we can derive gain namespace
         watch = dict(WATCH_PERIODS)
-        watch['ap.pilot'] = 1.0   # active pilot algorithm name
-        for name in GAIN_NAMES:
-            for pattern in [
-                f'ap.gains.{name}',
-                f'ap.gains.{name.lower()}',
-                f'ap.pilot.gains.{name}',
-                f'ap.pilots.basic.gains.{name}',
-                f'ap.pilots.simple.gains.{name}',
-            ]:
-                watch[pattern] = 1.0
+        watch['ap.pilot'] = 1.0
 
         watch_msg = 'watch=' + json.dumps(watch) + '\n'
         print(f'[pypilot] SEND: {watch_msg.strip()}')
         s.sendall(watch_msg.encode('utf-8'))
+
+        # GET the gain values directly — bypasses watch; reveals real key names
+        get_keys = {f'ap.gains.{n}': 1 for n in GAIN_NAMES}
+        get_msg = 'get=' + json.dumps(get_keys) + '\n'
+        print(f'[pypilot] SEND: {get_msg.strip()}')
+        s.sendall(get_msg.encode('utf-8'))
 
         buf = ''
         while True:
