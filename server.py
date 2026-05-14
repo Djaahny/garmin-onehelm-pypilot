@@ -67,36 +67,33 @@ class PypilotClient:
             time.sleep(3)
 
     def _discover_gains(self):
-        """Fetch pypilot HTTP API to find real gain key names and ranges."""
+        """Try HTTP first, fall back to nothing (TCP list handled in recv loop)."""
         try:
             url = f'http://{PYPILOT_HOST}:8080/values'
             resp = urllib.request.urlopen(url, timeout=4)
             all_vals = json.loads(resp.read().decode())
+            gain_keys = {k: v for k, v in all_vals.items() if 'gain' in k.lower()}
+            if not gain_keys:
+                ap_keys = sorted(k for k in all_vals if k.startswith('ap.'))
+                print(f'[pypilot] No gain keys via HTTP. ap.* keys: {ap_keys}')
+                return
+            print(f'[pypilot] Gain keys via HTTP: {list(gain_keys.keys())}')
+            new_map = {}
+            with self._state_lock:
+                for key, info in gain_keys.items():
+                    gain_name = key.split('.')[-1].upper()
+                    if gain_name not in GAIN_NAMES:
+                        continue
+                    new_map[gain_name] = key
+                    if isinstance(info, dict):
+                        if 'min' in info:
+                            self._state['gains'][gain_name]['min'] = float(info['min'])
+                        if 'max' in info:
+                            self._state['gains'][gain_name]['max'] = float(info['max'])
+            self._gain_key_map = new_map
+            print(f'[pypilot] Gain key map: {new_map}')
         except Exception as e:
             print(f'[pypilot] HTTP discovery failed: {e}')
-            return
-
-        gain_keys = {k: v for k, v in all_vals.items() if 'gain' in k.lower()}
-        if not gain_keys:
-            ap_keys = sorted(k for k in all_vals if k.startswith('ap.'))
-            print(f'[pypilot] No gain keys via HTTP. ap.* keys: {ap_keys}')
-            return
-
-        print(f'[pypilot] Gain keys discovered: {list(gain_keys.keys())}')
-        new_map = {}
-        with self._state_lock:
-            for key, info in gain_keys.items():
-                gain_name = key.split('.')[-1].upper()
-                if gain_name not in GAIN_NAMES:
-                    continue
-                new_map[gain_name] = key
-                if isinstance(info, dict):
-                    if 'min' in info:
-                        self._state['gains'][gain_name]['min'] = float(info['min'])
-                    if 'max' in info:
-                        self._state['gains'][gain_name]['max'] = float(info['max'])
-        self._gain_key_map = new_map
-        print(f'[pypilot] Gain key map: {new_map}')
 
     def _connect(self):
         self._discover_gains()
@@ -112,13 +109,21 @@ class PypilotClient:
         with self._state_lock:
             self._state['message'] = 'Connected to pypilot'
 
-        # Build watch dict — use discovered gain keys, fall back to defaults
+        # Request pypilot's full value list so we can discover gain key names
+        s.sendall(b'list=1\n')
+
+        # Build watch dict — base values + every plausible gain key pattern
         watch = dict(WATCH_PERIODS)
+        watch['ap.pilot'] = 1.0   # active pilot algorithm name
         for name in GAIN_NAMES:
-            default_key = f'ap.gains.{name}'
-            real_key    = self._gain_key_map.get(name, default_key)
-            watch.pop(default_key, None)
-            watch[real_key] = 1.0
+            for pattern in [
+                f'ap.gains.{name}',
+                f'ap.gains.{name.lower()}',
+                f'ap.pilot.gains.{name}',
+                f'ap.pilots.basic.gains.{name}',
+                f'ap.pilots.simple.gains.{name}',
+            ]:
+                watch[pattern] = 1.0
 
         watch_msg = 'watch=' + json.dumps(watch) + '\n'
         print(f'[pypilot] SEND: {watch_msg.strip()}')
@@ -174,13 +179,14 @@ class PypilotClient:
                 elif key == 'rudder.angle':
                     self._state['rudder_angle'] = float(val_str)
                     print(f'[pypilot] rudder={self._state["rudder_angle"]}')
+                elif key == 'ap.pilot':
+                    print(f'[pypilot] active pilot algorithm: {val_str}')
                 elif 'gain' in key.lower():
                     print(f'[pypilot] GAIN KEY: {key}={val_str}')
                     gain_name = key.split('.')[-1].upper()
                     if gain_name in self._state['gains']:
                         self._state['gains'][gain_name]['value'] = float(val_str)
-                elif key == 'values':
-                    # initial handshake — extract gain min/max from descriptor
+                elif key in ('values', 'list'):
                     self._parse_values_descriptor(val_str)
                 else:
                     pass  # unrecognised key - visible in RECV log above
