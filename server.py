@@ -12,14 +12,26 @@ PYPILOT_PORT = 23322
 MODE_FROM_PYPILOT = {'compass': 'auto', 'wind': 'wind', 'gps': 'nav', 'level': 'level', 'true wind': 'wind'}
 MODE_TO_PYPILOT   = {'auto': 'compass', 'wind': 'wind', 'nav': 'gps', 'level': 'level'}
 
-WATCH_VALUES = [
-    'ap.heading',
-    'ap.heading_command',
-    'ap.enabled',
-    'ap.mode',
-    'wind.direction',
-    'rudder.angle',
-]
+GAIN_NAMES = ['P', 'I', 'D', 'DD']
+GAIN_DEFAULTS = {
+    'P':  {'min': 0.0, 'max': 3.0},
+    'I':  {'min': 0.0, 'max': 1.0},
+    'D':  {'min': 0.0, 'max': 5.0},
+    'DD': {'min': 0.0, 'max': 5.0},
+}
+
+# key → update period in seconds
+WATCH_PERIODS = {
+    'ap.heading':         0.25,
+    'ap.heading_command': 0.25,
+    'ap.enabled':         0.25,
+    'ap.mode':            0.5,
+    'wind.direction':     0.5,
+    'rudder.angle':       0.25,
+    **{f'ap.gains.{n}.value': 1.0 for n in GAIN_NAMES},
+    **{f'ap.gains.{n}.min':   1.0 for n in GAIN_NAMES},
+    **{f'ap.gains.{n}.max':   1.0 for n in GAIN_NAMES},
+}
 
 
 class PypilotClient:
@@ -32,6 +44,10 @@ class PypilotClient:
             'wind_angle':   None,
             'rudder_angle': None,
             'message':      'Connecting to pypilot…',
+            'gains': {
+                n: {'value': None, 'min': GAIN_DEFAULTS[n]['min'], 'max': GAIN_DEFAULTS[n]['max']}
+                for n in GAIN_NAMES
+            },
         }
         self._state_lock = threading.Lock()
         self._sock       = None
@@ -62,8 +78,7 @@ class PypilotClient:
             self._state['message'] = 'Connected to pypilot'
 
         # pypilot wire format: watch={"key":{"period":0.25}, ...}
-        watch_dict = {name: 0.25 for name in WATCH_VALUES}
-        watch_msg = 'watch=' + json.dumps(watch_dict) + '\n'
+        watch_msg = 'watch=' + json.dumps(WATCH_PERIODS) + '\n'
         print(f'[pypilot] SEND: {watch_msg.strip()}')
         s.sendall(watch_msg.encode('utf-8'))
 
@@ -117,6 +132,13 @@ class PypilotClient:
                 elif key == 'rudder.angle':
                     self._state['rudder_angle'] = float(val_str)
                     print(f'[pypilot] rudder={self._state["rudder_angle"]}')
+                elif key.startswith('ap.gains.'):
+                    parts = key.split('.')
+                    if len(parts) == 4:
+                        gain_name, field = parts[2], parts[3]
+                        if gain_name in self._state['gains'] and field in ('value', 'min', 'max'):
+                            self._state['gains'][gain_name][field] = float(val_str)
+                            print(f'[pypilot] gain {gain_name}.{field}={val_str}')
                 else:
                     pass  # unrecognised key - visible in RECV log above
             except (ValueError, TypeError) as e:
@@ -164,6 +186,10 @@ class PypilotClient:
         s['course']     = round(s['course'],  1)
         s['wind_angle']   = round(s['wind_angle'],   1) if s['wind_angle']   is not None else None
         s['rudder_angle'] = round(s['rudder_angle'], 1) if s['rudder_angle'] is not None else None
+        # deep-copy gains so lock is not held across serialisation
+        s['gains'] = {
+            n: dict(v) for n, v in s['gains'].items()
+        }
         return s
 
 
@@ -197,6 +223,11 @@ def handle_cmd(msg):
         with pilot._state_lock:
             new_course = (pilot._state['course'] + 100) % 360
         pilot.set('ap.heading_command', new_course)
+    elif cmd == 'gain':
+        name  = msg.get('name')
+        value = msg.get('value')
+        if name in GAIN_NAMES and value is not None:
+            pilot.set(f'ap.gains.{name}.value', round(float(value), 3))
 
 
 # ── Routes ───────────────────────────────────────────────────────────────────
