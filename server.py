@@ -60,7 +60,7 @@ class PypilotClient:
             self._state['message'] = 'Connected to pypilot'
 
         # pypilot wire format: watch={"key":{"period":0.25}, ...}
-        watch_dict = {name: {'period': 0.25} for name in WATCH_VALUES}
+        watch_dict = {name: 0.25 for name in WATCH_VALUES}
         watch_msg = 'watch=' + json.dumps(watch_dict) + '\n'
         print(f'[pypilot] SEND: {watch_msg.strip()}')
         s.sendall(watch_msg.encode('utf-8'))
