@@ -30,9 +30,7 @@ WATCH_PERIODS = {
     'ap.mode':            0.5,
     'wind.direction':     0.5,
     'rudder.angle':       0.25,
-    **{f'ap.gains.{n}.value': 1.0 for n in GAIN_NAMES},
-    **{f'ap.gains.{n}.min':   1.0 for n in GAIN_NAMES},
-    **{f'ap.gains.{n}.max':   1.0 for n in GAIN_NAMES},
+    **{f'ap.gains.{n}': 1.0 for n in GAIN_NAMES},
 }
 
 
@@ -135,16 +133,37 @@ class PypilotClient:
                     self._state['rudder_angle'] = float(val_str)
                     print(f'[pypilot] rudder={self._state["rudder_angle"]}')
                 elif key.startswith('ap.gains.'):
-                    parts = key.split('.')
-                    if len(parts) == 4:
-                        gain_name, field = parts[2], parts[3]
-                        if gain_name in self._state['gains'] and field in ('value', 'min', 'max'):
-                            self._state['gains'][gain_name][field] = float(val_str)
-                            print(f'[pypilot] gain {gain_name}.{field}={val_str}')
+                    # key = 'ap.gains.P' or 'ap.gains.DD'
+                    gain_name = key.split('.', 2)[2]
+                    if gain_name in self._state['gains']:
+                        self._state['gains'][gain_name]['value'] = float(val_str)
+                        print(f'[pypilot] gain {gain_name}={val_str}')
+                elif key == 'values':
+                    # initial handshake — extract gain min/max from descriptor
+                    self._parse_values_descriptor(val_str)
                 else:
                     pass  # unrecognised key - visible in RECV log above
             except (ValueError, TypeError) as e:
                 print(f'[pypilot] PARSE ERROR key={key!r} val={val_str!r}: {e}')
+
+    def _parse_values_descriptor(self, val_str: str):
+        try:
+            desc = json.loads(val_str)
+        except ValueError:
+            return
+        with self._state_lock:
+            for key, info in desc.items():
+                if not key.startswith('ap.gains.'):
+                    continue
+                gain_name = key.split('.', 2)[2]
+                if gain_name not in self._state['gains']:
+                    continue
+                if isinstance(info, dict):
+                    if 'min' in info:
+                        self._state['gains'][gain_name]['min'] = float(info['min'])
+                    if 'max' in info:
+                        self._state['gains'][gain_name]['max'] = float(info['max'])
+                    print(f'[pypilot] gain descriptor {gain_name}: {info}')
 
     # ── Outgoing commands ────────────────────────────────────────────────────
     def _send_raw(self, data: str):
@@ -229,7 +248,7 @@ def handle_cmd(msg):
         name  = msg.get('name')
         value = msg.get('value')
         if name in GAIN_NAMES and value is not None:
-            pilot.set(f'ap.gains.{name}.value', round(float(value), 3))
+            pilot.set(f'ap.gains.{name}', round(float(value), 3))
 
 
 # ── Routes ───────────────────────────────────────────────────────────────────
