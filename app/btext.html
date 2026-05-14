@@ -1,0 +1,78 @@
+<!doctype html>
+<html>
+<head>
+  <title>Garmin Browser Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      background: #081018;
+      color: white;
+      font-family: sans-serif;
+      padding: 24px;
+      font-size: 24px;
+    }
+    h1 { color: #60c8ff; }
+    .ok { color: #5cff9d; }
+    .bad { color: #ff6b6b; }
+    .row { margin: 10px 0; border-bottom: 1px solid #234; padding-bottom: 8px; }
+    button {
+      font-size: 24px;
+      padding: 14px 24px;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Garmin Browser Test</h1>
+
+  <button onclick="runTests()">Run tests</button>
+
+  <div id="results"></div>
+
+  <script>
+    function add(name, value, ok) {
+      const div = document.createElement("div");
+      div.className = "row " + (ok ? "ok" : "bad");
+      div.textContent = name + ": " + value;
+      document.getElementById("results").appendChild(div);
+    }
+
+    async function runTests() {
+      const r = document.getElementById("results");
+      r.innerHTML = "";
+
+      add("User agent", navigator.userAgent, true);
+      add("Screen", window.innerWidth + " x " + window.innerHeight, true);
+      add("Device pixel ratio", window.devicePixelRatio, true);
+
+      add("fetch()", typeof fetch !== "undefined", typeof fetch !== "undefined");
+      add("Promise", typeof Promise !== "undefined", typeof Promise !== "undefined");
+      add("WebSocket", typeof WebSocket !== "undefined", typeof WebSocket !== "undefined");
+      add("localStorage", typeof localStorage !== "undefined", typeof localStorage !== "undefined");
+      add("sessionStorage", typeof sessionStorage !== "undefined", typeof sessionStorage !== "undefined");
+      add("CSS Grid", CSS && CSS.supports && CSS.supports("display", "grid"), CSS && CSS.supports && CSS.supports("display", "grid"));
+      add("CSS Flexbox", CSS && CSS.supports && CSS.supports("display", "flex"), CSS && CSS.supports && CSS.supports("display", "flex"));
+      add("Touch events", "ontouchstart" in window, "ontouchstart" in window);
+      add("Canvas", !!document.createElement("canvas").getContext, !!document.createElement("canvas").getContext);
+      add("SVG", !!document.createElementNS, !!document.createElementNS);
+      add("ES6 let/const", true, true);
+
+      try {
+        localStorage.setItem("garmin-test", "ok");
+        add("localStorage write", localStorage.getItem("garmin-test"), true);
+      } catch (e) {
+        add("localStorage write", e.message, false);
+      }
+
+      try {
+        const res = await fetch("/onehelm/config.json");
+        add("fetch local file", res.status, res.ok);
+      } catch (e) {
+        add("fetch local file", e.message, false);
+      }
+    }
+
+    runTests();
+  </script>
+</body>
+</html>

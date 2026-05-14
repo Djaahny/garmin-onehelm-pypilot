@@ -1,0 +1,172 @@
+<!doctype html>
+<html>
+<head>
+  <title>Garmin Live Dashboard</title>
+
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1">
+
+  <style>
+    body {
+      margin: 0;
+      background: #081018;
+      color: white;
+      font-family: sans-serif;
+      overflow: hidden;
+    }
+
+    .header {
+      background: #102030;
+      padding: 20px 30px;
+      font-size: 42px;
+      color: #60c8ff;
+      border-bottom: 2px solid #204060;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      padding: 24px;
+    }
+
+    .card {
+      background: #102030;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.4);
+    }
+
+    .label {
+      font-size: 28px;
+      color: #8fbcd4;
+      margin-bottom: 10px;
+    }
+
+    .value {
+      font-size: 96px;
+      font-weight: bold;
+      color: #60ffb0;
+    }
+
+    .small {
+      font-size: 24px;
+      color: #8fbcd4;
+    }
+
+    .status {
+      margin-top: 16px;
+      font-size: 24px;
+      color: #60c8ff;
+    }
+
+    canvas {
+      width: 100%;
+      height: 200px;
+      background: #081018;
+      border-radius: 12px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="header">
+  Garmin OneHelm Live Dashboard
+</div>
+
+<div class="container">
+
+  <div class="card">
+    <div class="label">Live Value</div>
+    <div class="value" id="value">0.0</div>
+    <div class="small">WebSocket realtime data</div>
+  </div>
+
+  <div class="card">
+    <div class="label">Browser Info</div>
+
+    <div class="small" id="ua"></div>
+
+    <div class="status" id="status">
+      Connecting...
+    </div>
+  </div>
+
+  <div class="card" style="grid-column: span 2;">
+    <div class="label">Realtime Graph</div>
+
+    <canvas id="graph" width="1200" height="200"></canvas>
+  </div>
+
+</div>
+
+<script>
+const valueEl = document.getElementById("value");
+const statusEl = document.getElementById("status");
+const uaEl = document.getElementById("ua");
+
+uaEl.textContent = navigator.userAgent;
+
+const canvas = document.getElementById("graph");
+const ctx = canvas.getContext("2d");
+
+const values = [];
+
+function drawGraph() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.strokeStyle = "#60c8ff";
+  ctx.lineWidth = 4;
+
+  ctx.beginPath();
+
+  values.forEach((v, i) => {
+    const x = i * (canvas.width / 100);
+    const y = canvas.height - (v / 100) * canvas.height;
+
+    if (i === 0)
+      ctx.moveTo(x, y);
+    else
+      ctx.lineTo(x, y);
+  });
+
+  ctx.stroke();
+}
+
+const ws = new WebSocket(
+  "ws://" + location.host + "/ws"
+);
+
+ws.onopen = () => {
+  statusEl.textContent = "WebSocket connected";
+  statusEl.style.color = "#60ffb0";
+};
+
+ws.onclose = () => {
+  statusEl.textContent = "WebSocket disconnected";
+  statusEl.style.color = "#ff8080";
+};
+
+ws.onerror = () => {
+  statusEl.textContent = "WebSocket error";
+  statusEl.style.color = "#ff8080";
+};
+
+ws.onmessage = (ev) => {
+  const data = JSON.parse(ev.data);
+
+  valueEl.textContent =
+    data.value.toFixed(1);
+
+  values.push(data.value);
+
+  if (values.length > 100)
+    values.shift();
+
+  drawGraph();
+};
+</script>
+
+</body>
+</html>

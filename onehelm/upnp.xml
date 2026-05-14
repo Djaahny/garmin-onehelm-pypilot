@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root xmlns="urn:schemas-upnp-org:device-1-0">
+  <specVersion>
+    <major>1</major>
+    <minor>0</minor>
+  </specVersion>
+  <device>
+    <deviceType>urn:schemas-upnp-org:device:Basic:1</deviceType>
+    <friendlyName>Pi OneHelm Test</friendlyName>
+    <manufacturer>Morten Labs</manufacturer>
+    <modelName>Pi OneHelm App</modelName>
+    <modelNumber>1</modelNumber>
+    <serialNumber>001</serialNumber>
+    <presentationURL>/</presentationURL>
+    <UDN>uuid:99223b99-e4d3-4552-b43b-7b3360c937f7</UDN>
+  </device>
+</root>
