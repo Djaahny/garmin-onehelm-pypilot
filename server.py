@@ -61,7 +61,9 @@ class PypilotClient:
 
         # pypilot wire format: watch={"key":{"period":0.25}, ...}
         watch_dict = {name: {'period': 0.25} for name in WATCH_VALUES}
-        s.sendall(('watch=' + json.dumps(watch_dict) + '\n').encode('utf-8'))
+        watch_msg = 'watch=' + json.dumps(watch_dict) + '\n'
+        print(f'[pypilot] SEND: {watch_msg.strip()}')
+        s.sendall(watch_msg.encode('utf-8'))
 
         buf = ''
         while True:
@@ -73,6 +75,7 @@ class PypilotClient:
                 line, buf = buf.split('\n', 1)
                 line = line.strip()
                 if line:
+                    print(f'[pypilot] RECV: {line}')
                     self._handle(line)
 
         with self._sock_lock:
@@ -97,16 +100,22 @@ class PypilotClient:
             try:
                 if key == 'ap.heading':
                     self._state['heading'] = float(val_str)
+                    print(f'[pypilot] heading={self._state["heading"]}')
                 elif key == 'ap.heading_command':
                     self._state['course'] = float(val_str)
+                    print(f'[pypilot] course={self._state["course"]}')
                 elif key == 'ap.enabled':
                     self._state['engaged'] = val_str.lower() in ('true', '1')
+                    print(f'[pypilot] engaged={self._state["engaged"]}')
                 elif key == 'ap.mode':
                     self._state['mode'] = MODE_FROM_PYPILOT.get(val_str, val_str)
+                    print(f'[pypilot] mode={self._state["mode"]} (raw={val_str})')
                 elif key == 'wind.direction':
                     self._state['wind_angle'] = float(val_str)
-            except (ValueError, TypeError):
-                pass
+                else:
+                    pass  # unrecognised key - visible in RECV log above
+            except (ValueError, TypeError) as e:
+                print(f'[pypilot] PARSE ERROR key={key!r} val={val_str!r}: {e}')
 
     # ── Outgoing commands ────────────────────────────────────────────────────
     def _send_raw(self, data: str):
@@ -122,7 +131,9 @@ class PypilotClient:
             val_str = 'true' if value else 'false'
         else:
             val_str = str(value)
-        self._send_raw(f'{name}={val_str}\n')
+        msg = f'{name}={val_str}\n'
+        print(f'[pypilot] SEND: {msg.strip()}')
+        self._send_raw(msg)
 
     # ── State snapshot for WebSocket push ────────────────────────────────────
     def snapshot(self):
