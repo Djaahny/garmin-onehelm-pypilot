@@ -30,11 +30,12 @@
       touch-action: manipulation;
     }
 
-    /* ── Layout ── */
+    /* ── Layout: fixed chrome rows, 1fr for main ── */
     #app {
       display: grid;
-      grid-template-rows: 56px 36px 1fr 70px;
+      grid-template-rows: 38px 22px 1fr 46px;
       height: 100vh;
+      overflow: hidden;
     }
 
     /* ── Header ── */
@@ -42,21 +43,21 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 20px;
+      padding: 0 14px;
       background: var(--panel);
-      border-bottom: 2px solid var(--border);
+      border-bottom: 1px solid var(--border);
     }
 
     #title {
-      font-size: 26px;
+      font-size: 20px;
       font-weight: bold;
       color: var(--accent);
       letter-spacing: 2px;
     }
 
     #ws-status {
-      font-size: 14px;
-      padding: 4px 12px;
+      font-size: 12px;
+      padding: 3px 10px;
       border-radius: 20px;
       background: #1a0a0a;
       color: var(--red);
@@ -64,11 +65,28 @@
     }
     #ws-status.connected { background: #0a2015; color: var(--green); }
 
-    /* ── Main content ── */
+    /* ── Status strip ── */
+    #status-strip {
+      background: #0a1825;
+      border-bottom: 1px solid var(--border);
+      padding: 0 12px;
+      font-size: 13px;
+      color: var(--amber);
+      letter-spacing: 1px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── Main: three-column grid, must not overflow ── */
     #main {
       display: grid;
-      grid-template-columns: 1fr 220px 1fr;
-      gap: 0;
+      grid-template-columns: 1fr 190px 1fr;
+      min-height: 0;
       overflow: hidden;
     }
 
@@ -77,50 +95,41 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 12px;
+      justify-content: flex-start;
+      padding: 6px 6px 4px;
       border-right: 1px solid var(--border);
+      overflow: hidden;
+      min-height: 0;
     }
 
+    /* SVG fills all height left after rudder gauge */
     #compass-svg {
-      width: min(300px, 90vw, 40vh);
-      height: min(300px, 90vw, 40vh);
-      filter: drop-shadow(0 0 16px rgba(30,144,255,0.3));
+      flex: 1 1 0;
+      min-height: 0;
+      min-width: 0;
+      width: 100%;
+      filter: drop-shadow(0 0 12px rgba(30,144,255,0.25));
     }
 
     #rudder-wrap {
-      width: 100%;
-      max-width: 300px;
-      margin-top: 10px;
+      flex: 0 0 auto;
+      width: 88%;
+      max-width: 260px;
+      padding-top: 2px;
     }
 
     #rudder-label {
-      font-size: 13px;
+      font-size: 11px;
       color: var(--dim);
       letter-spacing: 2px;
       text-transform: uppercase;
       text-align: center;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
 
     #rudder-svg {
       width: 100%;
       display: block;
-    }
-
-    #status-strip {
-      background: #0a1825;
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-      padding: 6px 16px;
-      font-size: 15px;
-      color: var(--amber);
-      letter-spacing: 1px;
-      text-align: center;
-      grid-column: 1 / -1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
 
     /* ── Center data panel ── */
@@ -129,8 +138,10 @@
       flex-direction: column;
       align-items: center;
       justify-content: space-evenly;
-      padding: 10px 8px;
+      padding: 6px 6px;
       border-right: 1px solid var(--border);
+      overflow: hidden;
+      min-height: 0;
     }
 
     .data-block {
@@ -139,14 +150,14 @@
     }
 
     .data-label {
-      font-size: 13px;
+      font-size: 11px;
       color: var(--dim);
       letter-spacing: 2px;
       text-transform: uppercase;
     }
 
     .data-value {
-      font-size: 56px;
+      font-size: 44px;
       font-weight: bold;
       line-height: 1;
       color: var(--text);
@@ -157,7 +168,7 @@
     .data-value.course  { color: var(--green); }
 
     .data-unit {
-      font-size: 20px;
+      font-size: 16px;
       color: var(--dim);
     }
 
@@ -173,18 +184,20 @@
       flex-direction: column;
       align-items: center;
       justify-content: space-evenly;
-      padding: 12px 16px;
+      padding: 6px 10px;
+      overflow: hidden;
+      min-height: 0;
     }
 
     /* Engage button */
     #engage-btn {
       width: 100%;
-      padding: 18px 0;
-      border-radius: 14px;
-      border: 3px solid var(--red);
+      padding: 10px 0;
+      border-radius: 12px;
+      border: 2px solid var(--red);
       background: var(--standby-bg);
       color: var(--red);
-      font-size: 22px;
+      font-size: 18px;
       font-weight: bold;
       letter-spacing: 3px;
       cursor: pointer;
@@ -204,17 +217,17 @@
     #mode-buttons {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 8px;
+      gap: 5px;
       width: 100%;
     }
 
     .mode-btn {
-      padding: 14px 0;
-      border-radius: 10px;
+      padding: 9px 0;
+      border-radius: 8px;
       border: 2px solid var(--border);
       background: var(--panel);
       color: var(--dim);
-      font-size: 16px;
+      font-size: 13px;
       font-weight: bold;
       letter-spacing: 1px;
       cursor: pointer;
@@ -234,17 +247,17 @@
     #adjust-grid {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr 1fr;
-      gap: 6px;
+      gap: 4px;
       width: 100%;
     }
 
     .adj-btn {
-      padding: 16px 0;
-      border-radius: 10px;
+      padding: 10px 0;
+      border-radius: 8px;
       border: 2px solid var(--border);
       background: var(--panel);
       color: var(--text);
-      font-size: 17px;
+      font-size: 14px;
       font-weight: bold;
       cursor: pointer;
       transition: all 0.15s;
@@ -255,33 +268,24 @@
     .adj-btn.stbd  { border-color: var(--green); color: var(--green); }
     .adj-btn:active { opacity: 0.6; transform: scale(0.95); }
 
-    /* ── Mode bar ── */
+    /* ── Footer ── */
     #mode-bar {
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 10px;
-      padding: 0 16px;
+      padding: 0 14px;
       background: var(--panel);
       border-top: 1px solid var(--border);
     }
 
-    #autopilot-msg {
-      font-size: 15px;
-      color: var(--amber);
-      letter-spacing: 1px;
-      flex: 1;
-      text-align: center;
-    }
-
-    /* Tack/Gybe buttons */
     .special-btn {
-      padding: 10px 20px;
+      padding: 8px 18px;
       border-radius: 8px;
       border: 2px solid var(--amber);
       background: transparent;
       color: var(--amber);
-      font-size: 15px;
+      font-size: 13px;
       font-weight: bold;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
@@ -398,7 +402,7 @@
       <div class="divider"></div>
       <div class="data-block">
         <div class="data-label">ERROR</div>
-        <div class="data-value" id="err-val" style="font-size:36px; color:var(--amber)">0.0°</div>
+        <div class="data-value" id="err-val" style="font-size:28px; color:var(--amber)">0.0°</div>
       </div>
     </div>
 
