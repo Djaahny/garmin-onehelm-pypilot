@@ -59,8 +59,9 @@ class PypilotClient:
         with self._state_lock:
             self._state['message'] = 'Connected to pypilot'
 
-        for name in WATCH_VALUES:
-            self._send({'method': 'watch', 'name': name, 'value': {'period': 0.25}})
+        # pypilot wire format: watch={"key":{"period":0.25}, ...}
+        watch_dict = {name: {'period': 0.25} for name in WATCH_VALUES}
+        s.sendall(('watch=' + json.dumps(watch_dict) + '\n').encode('utf-8'))
 
         buf = ''
         while True:
@@ -72,39 +73,56 @@ class PypilotClient:
                 line, buf = buf.split('\n', 1)
                 line = line.strip()
                 if line:
-                    try:
-                        self._handle(json.loads(line))
-                    except ValueError:
-                        pass  # skip non-JSON lines (e.g. version greeting)
+                    self._handle(line)
 
         with self._sock_lock:
             self._sock = None
 
-    def _handle(self, msg):
+    def _handle(self, line: str):
+        # Primary pypilot wire format: key=value
+        if '=' in line and not line.startswith('{'):
+            key, _, val_str = line.partition('=')
+            self._apply(key.strip(), val_str.strip())
+            return
+        # JSON fallback
+        if line.startswith('{'):
+            try:
+                for key, val in json.loads(line).items():
+                    self._apply(key, str(val))
+            except Exception:
+                pass
+
+    def _apply(self, key: str, val_str: str):
         with self._state_lock:
-            if 'ap.heading' in msg:
-                self._state['heading'] = float(msg['ap.heading'])
-            if 'ap.heading_command' in msg:
-                self._state['course'] = float(msg['ap.heading_command'])
-            if 'ap.enabled' in msg:
-                self._state['engaged'] = bool(msg['ap.enabled'])
-            if 'ap.mode' in msg:
-                raw = msg['ap.mode']
-                self._state['mode'] = MODE_FROM_PYPILOT.get(raw, raw)
-            if 'wind.direction' in msg:
-                self._state['wind_angle'] = float(msg['wind.direction'])
+            try:
+                if key == 'ap.heading':
+                    self._state['heading'] = float(val_str)
+                elif key == 'ap.heading_command':
+                    self._state['course'] = float(val_str)
+                elif key == 'ap.enabled':
+                    self._state['engaged'] = val_str.lower() in ('true', '1')
+                elif key == 'ap.mode':
+                    self._state['mode'] = MODE_FROM_PYPILOT.get(val_str, val_str)
+                elif key == 'wind.direction':
+                    self._state['wind_angle'] = float(val_str)
+            except (ValueError, TypeError):
+                pass
 
     # ── Outgoing commands ────────────────────────────────────────────────────
-    def _send(self, msg):
+    def _send_raw(self, data: str):
         with self._sock_lock:
             if self._sock:
                 try:
-                    self._sock.sendall((json.dumps(msg) + '\n').encode())
+                    self._sock.sendall(data.encode('utf-8'))
                 except Exception:
                     pass
 
     def set(self, name, value):
-        self._send({'method': 'set', 'name': name, 'value': value})
+        if isinstance(value, bool):
+            val_str = 'true' if value else 'false'
+        else:
+            val_str = str(value)
+        self._send_raw(f'{name}={val_str}\n')
 
     # ── State snapshot for WebSocket push ────────────────────────────────────
     def snapshot(self):
