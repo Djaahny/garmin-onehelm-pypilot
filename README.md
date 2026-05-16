@@ -1,6 +1,7 @@
 # This is an SPA for Garmin GPSMAP 923 for PyPilot control.
 
-- Requirements
+- Requirements:
+
 A working OneHelm server - see here: 
 https://github.com/Djaahny/OneHelm
 
