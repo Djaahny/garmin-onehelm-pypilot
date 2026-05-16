@@ -12,13 +12,13 @@
       --panel:     #0c1e30;
       --border:    #1a3a55;
       --accent:    #1e90ff;
-      --green:     #00e676;
+      --green:     #00ff88;
       --red:       #ff3d3d;
       --amber:     #ffab00;
-      --text:      #cde4f5;
+      --text:      #e8f4ff;
       --dim:       #4a7090;
-      --engaged-bg:#0a3020;
-      --standby-bg:#1a0a0a;
+      --engaged-bg:#008833;
+      --standby-bg:#b41414;
     }
 
     html, body {
@@ -30,62 +30,95 @@
       touch-action: manipulation;
     }
 
-    /* ── Layout: fixed chrome rows, 1fr for main ── */
+    /* 4-row grid: header | main | adjust | footer */
     #app {
       display: grid;
-      grid-template-rows: 38px 22px 1fr 46px;
+      grid-template-rows: 48px 1fr 64px 48px;
       height: 100vh;
       overflow: hidden;
     }
 
     /* ── Header ── */
     #header {
-      display: flex;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
       align-items: center;
-      justify-content: space-between;
-      padding: 0 14px;
+      gap: 8px;
+      padding: 0 12px;
       background: var(--panel);
       border-bottom: 1px solid var(--border);
     }
 
     #title {
-      font-size: 20px;
+      font-size: 17px;
       font-weight: bold;
       color: var(--accent);
       letter-spacing: 2px;
     }
 
+    #tack-group {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 48px;
+    }
+
+    .tack-btn {
+      padding: 6px 20px;
+      border-radius: 20px;
+      border: 2px solid var(--amber);
+      background: rgba(255,171,0,0.10);
+      color: var(--amber);
+      font-size: 13px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s;
+    }
+    .tack-btn:active { background: rgba(255,171,0,0.28); transform: scale(0.96); }
+
+    .tack-status {
+      font-size: 14px;
+      font-weight: bold;
+      color: var(--amber);
+      letter-spacing: 2px;
+      animation: tack-blink 1.1s ease-in-out infinite;
+    }
+    @keyframes tack-blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.55; }
+    }
+
+    .tack-cancel-btn {
+      padding: 6px 18px;
+      border-radius: 20px;
+      border: 2px solid var(--red);
+      background: rgba(255,61,61,0.15);
+      color: var(--red);
+      font-size: 13px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .tack-cancel-btn:active { background: rgba(255,61,61,0.38); transform: scale(0.96); }
+
     #ws-status {
-      font-size: 12px;
-      padding: 3px 10px;
+      font-size: 11px;
+      padding: 3px 9px;
       border-radius: 20px;
       background: #1a0a0a;
       color: var(--red);
       transition: all 0.3s;
+      white-space: nowrap;
     }
     #ws-status.connected { background: #0a2015; color: var(--green); }
 
-    /* ── Status strip ── */
-    #status-strip {
-      background: #0a1825;
-      border-bottom: 1px solid var(--border);
-      padding: 0 12px;
-      font-size: 13px;
-      color: var(--amber);
-      letter-spacing: 1px;
-      text-align: center;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    /* ── Main: three-column grid, must not overflow ── */
+    /* ── Main: 3-column ── */
     #main {
       display: grid;
-      grid-template-columns: 1fr 190px 1fr;
+      grid-template-columns: 1fr 175px 1fr;
       min-height: 0;
       overflow: hidden;
     }
@@ -96,87 +129,88 @@
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
-      padding: 6px 6px 4px;
+      padding: 4px 6px 2px;
       border-right: 1px solid var(--border);
       overflow: hidden;
       min-height: 0;
     }
 
-    /* SVG fills all height left after rudder gauge */
     #compass-svg {
       flex: 1 1 0;
       min-height: 0;
       min-width: 0;
       width: 100%;
-      filter: drop-shadow(0 0 12px rgba(30,144,255,0.25));
+      max-height: 62%;
+      filter: drop-shadow(0 0 10px rgba(30,144,255,0.22));
+    }
+
+    /* Pitch / Roll attitude strip */
+    #attitude-strip {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0;
+      width: 100%;
+      flex-shrink: 0;
+      padding: 2px 4px;
+    }
+    .att-item {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+      padding: 0 10px;
+    }
+    .att-item:first-child { border-right: 1px solid var(--border); }
+    .att-label {
+      font-size: 9px;
+      color: var(--dim);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+    .att-val {
+      font-size: 13px;
+      font-weight: bold;
+      font-variant-numeric: tabular-nums;
     }
 
     #rudder-wrap {
       flex: 0 0 auto;
-      width: 88%;
-      max-width: 260px;
+      width: 94%;
+      max-width: 285px;
       padding-top: 2px;
     }
 
     #rudder-label {
       font-size: 11px;
-      color: var(--dim);
+      color: #b0d8f0;
       letter-spacing: 2px;
       text-transform: uppercase;
       text-align: center;
       margin-bottom: 2px;
     }
 
-    #rudder-svg {
-      width: 100%;
-      display: block;
-    }
+    #rudder-svg { width: 100%; display: block; }
 
-    /* ── Center data panel ── */
+    /* ── Data panel ── */
     #data-panel {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: space-evenly;
-      padding: 6px 6px;
+      padding: 4px 6px;
       border-right: 1px solid var(--border);
       overflow: hidden;
       min-height: 0;
     }
 
-    .data-block {
-      text-align: center;
-      width: 100%;
-    }
-
-    .data-label {
-      font-size: 11px;
-      color: var(--dim);
-      letter-spacing: 2px;
-      text-transform: uppercase;
-    }
-
-    .data-value {
-      font-size: 44px;
-      font-weight: bold;
-      line-height: 1;
-      color: var(--text);
-      font-variant-numeric: tabular-nums;
-    }
-
-    .data-value.heading { color: #60d8ff; }
+    .data-block { text-align: center; width: 100%; }
+    .data-label { font-size: 11px; color: #b0d8f0; letter-spacing: 2px; text-transform: uppercase; }
+    .data-value { font-size: 44px; font-weight: bold; line-height: 1; color: var(--text); font-variant-numeric: tabular-nums; }
+    .data-value.heading { color: #00eeff; }
     .data-value.course  { color: var(--green); }
-
-    .data-unit {
-      font-size: 16px;
-      color: var(--dim);
-    }
-
-    .divider {
-      width: 80%;
-      height: 1px;
-      background: var(--border);
-    }
+    .data-value.wind    { color: var(--amber); font-size: 28px; }
+    .data-value.nav     { color: #c0a0ff; font-size: 28px; }
+    .divider { width: 80%; height: 1px; background: var(--border); }
 
     /* ── Controls panel ── */
     #controls-panel {
@@ -184,49 +218,38 @@
       flex-direction: column;
       align-items: center;
       justify-content: space-evenly;
-      padding: 6px 10px;
+      padding: 8px 10px;
       overflow: hidden;
       min-height: 0;
     }
 
-    /* Engage button */
     #engage-btn {
       width: 100%;
-      padding: 10px 0;
-      border-radius: 12px;
-      border: 2px solid var(--red);
+      min-height: 88px;
+      padding: 18px 0;
+      border-radius: 14px;
+      border: 3px solid var(--red);
       background: var(--standby-bg);
-      color: var(--red);
-      font-size: 18px;
+      color: #ffffff;
+      font-size: 24px;
       font-weight: bold;
-      letter-spacing: 3px;
+      letter-spacing: 4px;
       cursor: pointer;
       transition: all 0.2s;
       -webkit-tap-highlight-color: transparent;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.6);
     }
+    #engage-btn.engaged { border-color: var(--green); background: var(--engaged-bg); color: #ffffff; }
+    #engage-btn:active  { opacity: 0.75; transform: scale(0.97); }
 
-    #engage-btn.engaged {
-      border-color: var(--green);
-      background: var(--engaged-bg);
-      color: var(--green);
-    }
-
-    #engage-btn:active { opacity: 0.7; transform: scale(0.97); }
-
-    /* Mode buttons */
-    #mode-buttons {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 5px;
-      width: 100%;
-    }
+    #mode-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; }
 
     .mode-btn {
-      padding: 9px 0;
+      padding: 10px 0;
       border-radius: 8px;
       border: 2px solid var(--border);
       background: var(--panel);
-      color: var(--dim);
+      color: #a0c8e0;
       font-size: 13px;
       font-weight: bold;
       letter-spacing: 1px;
@@ -234,95 +257,118 @@
       transition: all 0.2s;
       -webkit-tap-highlight-color: transparent;
     }
-
-    .mode-btn.active {
-      border-color: var(--accent);
-      background: #0a1e35;
-      color: var(--accent);
-    }
-
+    .mode-btn.active { border-color: var(--accent); background: #0a1e35; color: #ffffff; }
     .mode-btn:active { opacity: 0.7; }
+    #mode-buttons .mode-btn:last-child:nth-child(odd) { grid-column: span 2; }
 
-    /* Adjust buttons */
-    #adjust-grid {
+    /* ── Full-width adjust row ── */
+    #adjust-row {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr 1fr;
-      gap: 4px;
-      width: 100%;
+      gap: 6px;
+      padding: 6px 10px;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
     }
 
     .adj-btn {
-      padding: 10px 0;
+      padding: 15px 0;
       border-radius: 8px;
       border: 2px solid var(--border);
       background: var(--panel);
       color: var(--text);
-      font-size: 14px;
+      font-size: 17px;
       font-weight: bold;
       cursor: pointer;
       transition: all 0.15s;
       -webkit-tap-highlight-color: transparent;
     }
-
     .adj-btn.port  { border-color: #ff6060; color: #ff6060; }
     .adj-btn.stbd  { border-color: var(--green); color: var(--green); }
-    .adj-btn:active { opacity: 0.6; transform: scale(0.95); }
+    .adj-btn:active { opacity: 0.6; transform: scale(0.96); }
 
-    /* ── Footer ── */
+    /* ── Footer nav tabs ── */
     #mode-bar {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      padding: 0 14px;
+      align-items: stretch;
       background: var(--panel);
       border-top: 1px solid var(--border);
     }
 
-    .special-btn {
-      padding: 8px 18px;
-      border-radius: 8px;
-      border: 2px solid var(--amber);
+    .nav-btn {
+      flex: 1;
       background: transparent;
-      color: var(--amber);
+      border: none;
+      border-right: 1px solid var(--border);
+      color: #a0c8e0;
       font-size: 13px;
       font-weight: bold;
+      letter-spacing: 2px;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
+      transition: color 0.2s, background 0.2s;
     }
-    .special-btn:active { opacity: 0.6; }
+    .nav-btn:last-child { border-right: none; }
+    .nav-btn.active { color: #ffffff; background: rgba(30,144,255,0.12); }
+    .nav-btn:active { opacity: 0.6; }
 
-    /* ── Gains overlay ── */
-    #gains-overlay {
-      display: none;
+    /* ── Overlay scrim ── */
+    #overlay-scrim {
       position: fixed;
       inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 99;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    #overlay-scrim.open { opacity: 1; pointer-events: all; }
+
+    /* ── Shared slide-in panel ── */
+    .side-overlay {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 72%;
+      height: 100%;
       background: var(--bg);
+      border-left: 2px solid var(--border);
+      display: flex;
       flex-direction: column;
       z-index: 100;
+      transform: translateX(105%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    #gains-overlay.open { display: flex; }
+    .side-overlay.open { transform: translateX(0); }
 
-    #gains-header {
+    .overlay-header {
       display: flex;
       align-items: center;
-      justify-content: space-between;
       padding: 0 16px;
-      height: 46px;
+      height: 48px;
       background: var(--panel);
       border-bottom: 2px solid var(--border);
       flex-shrink: 0;
     }
-
-    #gains-header span {
-      font-size: 18px;
+    .overlay-header span {
+      font-size: 16px;
       font-weight: bold;
       color: var(--accent);
       letter-spacing: 2px;
     }
 
-    #gains-close {
-      padding: 8px 20px;
+    .overlay-footer {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      height: 52px;
+      background: var(--panel);
+      border-top: 2px solid var(--border);
+    }
+
+    .overlay-back-btn {
+      padding: 10px 24px;
       border-radius: 8px;
       border: 2px solid var(--dim);
       background: transparent;
@@ -332,45 +378,109 @@
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
     }
-    #gains-close:active { opacity: 0.6; }
+    .overlay-back-btn:active { opacity: 0.6; }
 
+    /* ── Gains body ── */
     #gains-body {
       flex: 1;
       display: flex;
       flex-direction: column;
       justify-content: space-evenly;
-      padding: 10px 24px;
+      padding: 8px 16px;
       overflow: hidden;
     }
 
-    .gain-row {
-      display: grid;
-      grid-template-columns: 100px 70px 1fr 60px;
+    .gain-row { display: grid; grid-template-columns: 12px 80px 52px 36px 1fr 36px 44px; align-items: center; gap: 7px; }
+    .gain-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--red); flex-shrink: 0; align-self: center;
+      transition: background 0.3s;
+    }
+    .gain-dot.active { background: var(--green); }
+    .gain-label { font-size: 14px; font-weight: bold; color: var(--text); }
+    .gain-desc  { display: block; font-size: 10px; font-weight: normal; color: var(--dim); letter-spacing: 1px; }
+    .gain-val   { font-size: 19px; font-weight: bold; color: var(--accent); font-variant-numeric: tabular-nums; text-align: right; }
+    .gain-max   { font-size: 11px; color: var(--dim); }
+
+    #profile-btn {
+      width: 100%;
+      display: flex;
       align-items: center;
-      gap: 12px;
-    }
-
-    .gain-label {
-      font-size: 15px;
-      font-weight: bold;
+      gap: 6px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      border: 2px solid var(--border);
+      background: var(--panel);
       color: var(--text);
+      font-family: inherit;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: border-color 0.2s;
     }
-
-    .gain-desc {
-      display: block;
-      font-size: 11px;
-      font-weight: normal;
-      color: var(--dim);
+    #profile-btn:active { opacity: 0.7; }
+    .profile-btn-label {
+      font-size: 10px;
+      color: #b0d8f0;
+      letter-spacing: 2px;
+      flex-shrink: 0;
+    }
+    .profile-btn-val {
+      flex: 1;
+      font-size: 13px;
+      font-weight: bold;
       letter-spacing: 1px;
+      text-align: left;
     }
+    .profile-btn-arrow { font-size: 11px; color: var(--dim); }
 
-    .gain-val {
+    #profile-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 14px 16px;
+      gap: 10px;
+      overflow-y: auto;
+    }
+    .profile-option-btn {
+      flex: 1;
+      min-height: 56px;
+      border-radius: 10px;
+      border: 2px solid var(--border);
+      background: var(--panel);
+      color: #a0c8e0;
+      font-size: 17px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      font-family: inherit;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: all 0.15s;
+    }
+    .profile-option-btn.active {
+      border-color: var(--accent);
+      background: #0a1e35;
+      color: #ffffff;
+    }
+    .profile-option-btn:active { opacity: 0.7; transform: scale(0.98); }
+
+    .gain-step-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      border: 2px solid var(--accent);
+      background: rgba(30,144,255,0.12);
+      color: #ffffff;
       font-size: 22px;
       font-weight: bold;
-      color: var(--accent);
-      font-variant-numeric: tabular-nums;
-      text-align: right;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
     }
+    .gain-step-btn:active { background: rgba(30,144,255,0.35); }
 
     .gain-slider {
       -webkit-appearance: none;
@@ -382,13 +492,7 @@
       outline: none;
       cursor: pointer;
     }
-
-    .gain-slider::-webkit-slider-runnable-track {
-      height: 6px;
-      background: var(--border);
-      border-radius: 3px;
-    }
-
+    .gain-slider::-webkit-slider-runnable-track { height: 6px; background: var(--border); border-radius: 3px; }
     .gain-slider::-webkit-slider-thumb {
       -webkit-appearance: none;
       width: 44px;
@@ -400,102 +504,193 @@
       cursor: pointer;
     }
 
-    .gain-max {
-      font-size: 12px;
+    /* ── Settings body ── */
+    #settings-body { flex: 1; overflow-y: auto; }
+
+    .settings-section {
+      padding: 14px 16px 6px;
+      font-size: 10px;
       color: var(--dim);
-      text-align: left;
+      letter-spacing: 2px;
+      font-weight: bold;
+      text-transform: uppercase;
     }
+    .settings-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      gap: 8px;
+    }
+    .settings-row-label { flex: 1; color: var(--text); }
+    .settings-val { color: var(--accent); font-weight: bold; font-size: 13px; white-space: nowrap; }
+
+    .settings-link {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding: 14px 16px;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      color: var(--dim);
+      font-size: 14px;
+      font-family: inherit;
+      text-align: left;
+      cursor: default;
+    }
+    .settings-link::after { content: '→'; color: var(--border); }
+
+    .settings-offset-ctrl {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .settings-offset-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 6px;
+      border: 2px solid var(--accent);
+      background: rgba(30,144,255,0.1);
+      color: var(--accent);
+      font-size: 20px;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .settings-offset-btn:active { background: rgba(30,144,255,0.32); }
+
+    .settings-reset-btn {
+      padding: 5px 12px;
+      border-radius: 6px;
+      border: 2px solid var(--red);
+      background: rgba(255,61,61,0.1);
+      color: var(--red);
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: inherit;
+      white-space: nowrap;
+      flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .settings-reset-btn:active { background: rgba(255,61,61,0.32); }
   </style>
 </head>
 <body>
 
 <div id="app">
 
-  <!-- Header -->
+  <!-- Header: title | tack buttons | ws status -->
   <div id="header">
     <div id="title">PYPILOT</div>
-    <div id="ws-status">OFFLINE</div>
+    <div id="tack-group">
+      <template v-if="st.tackState === 'none'">
+        <button class="tack-btn" @click="sendCmd('tack_port')">◀ TACK PORT</button>
+        <button class="tack-btn" @click="sendCmd('tack_stbd')">TACK STBD ▶</button>
+      </template>
+      <template v-else>
+        <span class="tack-status">TACKING {{ st.tackDirection.toUpperCase() }}…</span>
+        <button class="tack-cancel-btn" @click="sendCmd('cancel_tack')">✕ CANCEL</button>
+      </template>
+    </div>
+    <div id="ws-status" :class="{ connected: st.wsConnected }">
+      {{ st.wsConnected ? 'ONLINE' : 'OFFLINE' }}
+    </div>
   </div>
-
-  <!-- Status strip -->
-  <div id="status-strip">Waiting for pypilot…</div>
 
   <!-- Main -->
   <div id="main">
 
-    <!-- Compass -->
+    <!-- Compass panel -->
     <div id="compass-panel">
       <svg id="compass-svg" viewBox="-160 -160 320 320" xmlns="http://www.w3.org/2000/svg">
-        <!-- Outer bezel -->
         <circle cx="0" cy="0" r="155" fill="#070f1a" stroke="#1a3a55" stroke-width="3"/>
         <circle cx="0" cy="0" r="148" fill="none" stroke="#0d2035" stroke-width="1"/>
-
-        <!-- Rotating compass disc -->
-        <g id="disc">
-          <!-- Degree ring background -->
+        <g :transform="discTransform">
           <circle cx="0" cy="0" r="143" fill="#0a1825" stroke="none"/>
-
-          <!-- Tick marks and labels generated by JS -->
           <g id="ticks"></g>
-
-          <!-- Cardinal / intercardinal points -->
           <g id="cardinals"></g>
-
-          <!-- Wind indicator (apparent wind) -->
-          <g id="wind-indicator" opacity="0">
-            <line id="wind-line" x1="0" y1="0" x2="0" y2="-105"
-                  stroke="#ffab00" stroke-width="3" stroke-dasharray="6 4"/>
-            <polygon id="wind-arrow" points="0,-110 -6,-96 6,-96" fill="#ffab00"/>
+          <g :opacity="windOpacity" :transform="windTransform">
+            <line x1="0" y1="0" x2="0" y2="-105" stroke="#ffab00" stroke-width="3" stroke-dasharray="6 4"/>
+            <polygon points="0,-110 -6,-96 6,-96" fill="#ffab00"/>
           </g>
         </g>
-
-        <!-- Fixed elements over disc -->
-        <!-- North indicator ring -->
         <circle cx="0" cy="0" r="120" fill="none" stroke="#0d2035" stroke-width="1"/>
-        <!-- Center dot -->
         <circle cx="0" cy="0" r="8" fill="#1e90ff"/>
         <circle cx="0" cy="0" r="4" fill="#060e18"/>
-
-        <!-- Lubber line (fixed, points to top = bow) -->
         <rect x="-3" y="-155" width="6" height="20" fill="#ff3d3d" rx="2"/>
-
-        <!-- Heading pointer (bow direction, fixed at top) -->
         <polygon points="0,-118 -10,-100 10,-100" fill="#1e90ff" opacity="0.9"/>
         <polygon points="0,-118 -10,-100 10,-100" fill="none" stroke="#60d8ff" stroke-width="1.5"/>
-
-        <!-- Course pointer (where we want to go, rotates relative to heading) -->
-        <g id="course-pointer">
-          <polygon points="0,-118 -8,-102 8,-102" fill="none" stroke="#00e676" stroke-width="2.5" stroke-dasharray="5 3"/>
+        <g :transform="coursePointerTransform">
+          <polygon points="0,-118 -8,-102 8,-102" fill="none" stroke="#00ff88" stroke-width="2.5" stroke-dasharray="5 3"/>
         </g>
       </svg>
-      <!-- Rudder gauge -->
+
+      <!-- Pitch / Roll attitude strip -->
+      <div id="attitude-strip">
+        <span class="att-item">
+          <span class="att-label">PITCH</span>
+          <span class="att-val" :style="{ color: pitchColor }">{{ pitchDisplay }}</span>
+        </span>
+        <span class="att-item">
+          <span class="att-label">ROLL</span>
+          <span class="att-val" :style="{ color: rollColor }">{{ rollDisplay }}</span>
+        </span>
+      </div>
+
+      <!-- Rudder gauge: horizontal bar, port=left/red, stbd=right/green -->
       <div id="rudder-wrap">
         <div id="rudder-label">RUDDER</div>
-        <svg id="rudder-svg" viewBox="-110 -10 220 70" xmlns="http://www.w3.org/2000/svg">
-          <!-- Background arc P→S -->
-          <path d="M -100 0 A 100 100 0 0 1 100 0" fill="none" stroke="#0d2035" stroke-width="14" stroke-linecap="round"/>
-          <!-- Port zone (red) -->
-          <path d="M -100 0 A 100 100 0 0 1 0 -100" fill="none" stroke="#3a0a0a" stroke-width="14" stroke-linecap="round"/>
-          <!-- Stbd zone (green) -->
-          <path d="M 0 -100 A 100 100 0 0 1 100 0" fill="none" stroke="#0a2a0a" stroke-width="14" stroke-linecap="round"/>
-          <!-- Active arc (fills from center toward rudder angle) -->
-          <path id="rudder-arc" d="" fill="none" stroke-width="10" stroke-linecap="round"/>
-          <!-- Center tick -->
-          <line x1="0" y1="-92" x2="0" y2="-108" stroke="#4a7090" stroke-width="2"/>
-          <!-- Port/stbd labels -->
-          <text x="-104" y="20" text-anchor="middle" fill="#ff6060" font-size="13" font-weight="bold">P</text>
-          <text x="104"  y="20" text-anchor="middle" fill="#00e676" font-size="13" font-weight="bold">S</text>
-          <!-- Degree ticks at 15° intervals -->
-          <g id="rudder-ticks"></g>
-          <!-- Needle -->
-          <line id="rudder-needle" x1="0" y1="0" x2="0" y2="-95"
-                stroke="white" stroke-width="3" stroke-linecap="round"
-                transform="rotate(0)"/>
-          <!-- Center hub -->
-          <circle cx="0" cy="0" r="5" fill="#1e90ff"/>
-          <!-- Value label -->
-          <text id="rudder-val" x="0" y="52" text-anchor="middle"
-                fill="white" font-size="20" font-weight="bold" font-family="Arial">--°</text>
+        <svg id="rudder-svg" viewBox="-110 -24 220 80" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <clipPath id="barClip">
+              <rect x="-90" y="-11" width="180" height="22" rx="5"/>
+            </clipPath>
+          </defs>
+
+          <!-- Background track -->
+          <rect x="-90" y="-11" width="180" height="22" rx="5" fill="#0b1e30"/>
+          <!-- Port tint -->
+          <rect x="-90" y="-11" width="90" height="22" fill="#3a0a0a" clip-path="url(#barClip)"/>
+          <!-- Stbd tint -->
+          <rect x="0" y="-11" width="90" height="22" fill="#0a3018" clip-path="url(#barClip)"/>
+
+          <!-- Active fill (slides from center) -->
+          <rect :x="rudderFillX" y="-9" :width="rudderFillW" height="18"
+                :fill="(st.rudderAngle ?? 0) < 0 ? '#ff4040' : '#00ee77'"
+                clip-path="url(#barClip)"/>
+
+          <!-- Tick marks above bar -->
+          <line x1="-90" y1="-11" x2="-90" y2="-22" stroke="#3a6080" stroke-width="2"/>
+          <line x1="-60" y1="-11" x2="-60" y2="-18" stroke="#2a5070" stroke-width="1.5"/>
+          <line x1="-30" y1="-11" x2="-30" y2="-18" stroke="#2a5070" stroke-width="1.5"/>
+          <line x1=" 30" y1="-11" x2=" 30" y2="-18" stroke="#2a5070" stroke-width="1.5"/>
+          <line x1=" 60" y1="-11" x2=" 60" y2="-18" stroke="#2a5070" stroke-width="1.5"/>
+          <line x1=" 90" y1="-11" x2=" 90" y2="-22" stroke="#3a6080" stroke-width="2"/>
+          <text x="-90" y="-23" text-anchor="middle" fill="#3a6080" font-size="8" font-family="Arial">45</text>
+          <text x=" 90" y="-23" text-anchor="middle" fill="#3a6080" font-size="8" font-family="Arial">45</text>
+
+          <!-- Center mark -->
+          <line x1="0" y1="-14" x2="0" y2="14" stroke="#7ab8d8" stroke-width="2.5"/>
+
+          <!-- P / S end labels -->
+          <text x="-103" y="5" text-anchor="middle" fill="#ff6060"
+                font-size="15" font-weight="bold" font-family="Arial">P</text>
+          <text x="103"  y="5" text-anchor="middle" fill="#00ff88"
+                font-size="15" font-weight="bold" font-family="Arial">S</text>
+
+          <!-- Large value readout -->
+          <text x="0" y="52" text-anchor="middle" :fill="rudderValColor"
+                font-size="28" font-weight="bold" font-family="Arial">{{ rudderDisplay }}</text>
         </svg>
       </div>
     </div>
@@ -504,184 +699,297 @@
     <div id="data-panel">
       <div class="data-block">
         <div class="data-label">HDG</div>
-        <div class="data-value heading" id="hdg-val">---</div>
-        <div class="data-unit">°</div>
+        <div class="data-value heading">{{ hdgDisplay }}</div>
       </div>
       <div class="divider"></div>
       <div class="data-block">
         <div class="data-label">COURSE</div>
-        <div class="data-value course" id="crs-val">---</div>
-        <div class="data-unit">°</div>
+        <div class="data-value course">{{ crsDisplay }}</div>
       </div>
       <div class="divider"></div>
       <div class="data-block">
         <div class="data-label">ERROR</div>
-        <div class="data-value" id="err-val" style="font-size:28px; color:var(--amber)">0.0°</div>
+        <div class="data-value" style="font-size:28px" :style="{ color: errorColor }">{{ errorDisplay }}</div>
       </div>
+
+      <!-- Wind angle + speed when in wind modes -->
+      <template v-if="st.mode === 'wind' || st.mode === 'level'">
+        <div class="divider"></div>
+        <div class="data-block">
+          <div class="data-label">WIND ANG</div>
+          <div class="data-value wind">{{ windAngleDisplay }}</div>
+        </div>
+        <div class="divider"></div>
+        <div class="data-block">
+          <div class="data-label">WIND SPD</div>
+          <div class="data-value wind">{{ windSpeedDisplay }}</div>
+        </div>
+      </template>
+
+      <!-- Waypoint data when in nav mode -->
+      <template v-if="st.mode === 'nav'">
+        <div class="divider"></div>
+        <div class="data-block">
+          <div class="data-label">BEARING WP</div>
+          <div class="data-value nav">{{ navBtwDisplay }}</div>
+        </div>
+        <div class="divider"></div>
+        <div class="data-block">
+          <div class="data-label">DIST WP</div>
+          <div class="data-value nav">{{ navDtwDisplay }}</div>
+        </div>
+        <div class="divider"></div>
+        <div class="data-block">
+          <div class="data-label">XTE</div>
+          <div class="data-value" style="font-size:22px" :style="{ color: xteColor }">{{ navXteDisplay }}</div>
+        </div>
+      </template>
     </div>
 
     <!-- Controls panel -->
     <div id="controls-panel">
-      <!-- Engage/Standby -->
-      <button id="engage-btn" onclick="toggleEngage()">STANDBY</button>
-
-      <!-- Mode selector -->
+      <button id="engage-btn" :class="{ engaged: st.engaged }" @click="toggleEngage">
+        {{ st.engaged ? 'ENGAGED' : 'STANDBY' }}
+      </button>
       <div id="mode-buttons">
-        <button class="mode-btn active" data-mode="auto"  onclick="setMode('auto')">AUTO</button>
-        <button class="mode-btn"        data-mode="wind"  onclick="setMode('wind')">WIND</button>
-        <button class="mode-btn"        data-mode="nav"   onclick="setMode('nav')">NAV</button>
-        <button class="mode-btn"        data-mode="level" onclick="setMode('level')">LEVEL</button>
+        <button v-for="m in availableModes" :key="m.id"
+                class="mode-btn" :class="{ active: st.mode === m.id }"
+                @click="setMode(m.id)">
+          {{ m.label }}
+        </button>
       </div>
-
-      <!-- Course adjust -->
-      <div id="adjust-grid">
-        <button class="adj-btn port"  onclick="adjust(-10)">−10°</button>
-        <button class="adj-btn port"  onclick="adjust(-1)">−1°</button>
-        <button class="adj-btn stbd"  onclick="adjust(1)">+1°</button>
-        <button class="adj-btn stbd"  onclick="adjust(10)">+10°</button>
-      </div>
+      <button id="profile-btn" @click="openProfile">
+        <span class="profile-btn-label">PROFILE</span>
+        <span class="profile-btn-val">{{ st.gainProfile.replace(/_/g, ' ').toUpperCase() }}</span>
+        <span class="profile-btn-arrow">▶</span>
+      </button>
     </div>
 
   </div><!-- /main -->
 
-  <!-- Footer -->
+  <!-- Full-width adjust row -->
+  <div id="adjust-row">
+    <button class="adj-btn port" @click="adjust(-10)">−10°</button>
+    <button class="adj-btn port" @click="adjust(-1)">−1°</button>
+    <button class="adj-btn stbd" @click="adjust(1)">+1°</button>
+    <button class="adj-btn stbd" @click="adjust(10)">+10°</button>
+  </div>
+
+  <!-- Footer nav tabs -->
   <div id="mode-bar">
-    <button class="special-btn" onclick="sendCmd('tack_port')">◀ TACK PORT</button>
-    <button class="special-btn" onclick="sendCmd('tack_stbd')">TACK STBD ▶</button>
-    <button class="special-btn" onclick="openGains()" style="border-color:var(--dim);color:var(--dim)">GAINS</button>
+    <button class="nav-btn" :class="{ active: st.showGains }"    @click="openGains">GAINS</button>
+    <button class="nav-btn" :class="{ active: st.showSettings }" @click="openSettings">SETTINGS</button>
+  </div>
+
+  <!-- Scrim -->
+  <div id="overlay-scrim"
+       :class="{ open: st.showGains || st.showSettings || st.showProfile }"
+       @click="closeAll"></div>
+
+  <!-- Gains overlay -->
+  <div id="gains-overlay" class="side-overlay" :class="{ open: st.showGains }">
+    <div class="overlay-header"><span>GAIN SETTINGS</span></div>
+    <div id="gains-body">
+      <div v-for="name in orderedGains" :key="name" class="gain-row">
+        <span class="gain-dot" :class="{ active: gainActive(name) }"></span>
+        <div class="gain-label">{{ name }}<span class="gain-desc">{{ GAIN_DESC[name] }}</span></div>
+        <div class="gain-val">
+          {{ st.gains[name] && st.gains[name].value !== null
+              ? Number(st.gains[name].value).toFixed(2) : '—' }}
+        </div>
+        <button class="gain-step-btn" @click="stepGain(name, -0.01)">−</button>
+        <input class="gain-slider" type="range"
+               :min="st.gains[name] ? st.gains[name].min : 0"
+               :max="st.gains[name] ? st.gains[name].max : 5"
+               step="0.01"
+               :value="st.gains[name] && st.gains[name].value !== null ? st.gains[name].value : 0"
+               @input="onGain(name, $event.target.value)"/>
+        <button class="gain-step-btn" @click="stepGain(name, 0.01)">+</button>
+        <div class="gain-max">{{ st.gains[name] ? Number(st.gains[name].max).toFixed(2) : '5.00' }}</div>
+      </div>
+    </div>
+    <div class="overlay-footer">
+      <button class="overlay-back-btn" @click="closeGains">◀ BACK</button>
+    </div>
+  </div>
+
+  <!-- Settings overlay -->
+  <div id="settings-overlay" class="side-overlay" :class="{ open: st.showSettings }">
+    <div class="overlay-header"><span>SETTINGS</span></div>
+    <div id="settings-body">
+
+      <div class="settings-section">Connection</div>
+      <div class="settings-row">
+        <span class="settings-row-label">Host</span>
+        <span class="settings-val">{{ st.pypilotHost || '—' }}</span>
+      </div>
+      <div class="settings-row">
+        <span class="settings-row-label">Port</span>
+        <span class="settings-val">{{ st.pypilotPort || '—' }}</span>
+      </div>
+
+      <div class="settings-section">IMU / Attitude</div>
+      <div class="settings-row">
+        <span class="settings-row-label">Pitch</span>
+        <span class="settings-val">{{ st.imuPitch !== null ? st.imuPitch.toFixed(1) + '°' : '—' }}</span>
+      </div>
+      <div class="settings-row">
+        <span class="settings-row-label">Roll</span>
+        <span class="settings-val">{{ st.imuRoll !== null ? st.imuRoll.toFixed(1) + '°' : '—' }}</span>
+      </div>
+      <div class="settings-row">
+        <span class="settings-row-label">Heading Offset</span>
+        <div class="settings-offset-ctrl">
+          <button class="settings-offset-btn" @click="adjustHeadingOffset(-1)">−</button>
+          <span class="settings-val">{{ st.imuHeadingOffset.toFixed(1) }}°</span>
+          <button class="settings-offset-btn" @click="adjustHeadingOffset(1)">+</button>
+        </div>
+      </div>
+      <div class="settings-row" v-if="st.imuError">
+        <span class="settings-row-label">IMU Error</span>
+        <span class="settings-val" style="color: var(--red)">{{ st.imuError }}</span>
+      </div>
+      <div class="settings-row">
+        <span class="settings-row-label">Uptime</span>
+        <span class="settings-val">{{ st.imuUptime || '—' }}</span>
+      </div>
+
+      <div class="settings-section">Servo / Motor</div>
+      <div class="settings-row">
+        <span class="settings-row-label">State</span>
+        <span class="settings-val">{{ st.servoState || '—' }}</span>
+      </div>
+      <div class="settings-row">
+        <span class="settings-row-label">Controller</span>
+        <span class="settings-val">{{ st.servoController || '—' }}</span>
+      </div>
+      <div class="settings-row">
+        <span class="settings-row-label">Voltage</span>
+        <span class="settings-val">{{ st.servoVoltage !== null ? st.servoVoltage.toFixed(1) + ' V' : '—' }}</span>
+      </div>
+      <div class="settings-row">
+        <span class="settings-row-label">Power</span>
+        <span class="settings-val">{{ st.servoWatts !== null ? st.servoWatts.toFixed(1) + ' W' : '—' }}</span>
+      </div>
+      <div class="settings-row" v-if="st.servoFlags">
+        <span class="settings-row-label">Flags</span>
+        <span class="settings-val">{{ st.servoFlags }}</span>
+      </div>
+      <div class="settings-row">
+        <span class="settings-row-label">Amp Hours</span>
+        <span class="settings-val">{{ st.servoAmpHours !== null ? st.servoAmpHours.toFixed(3) + ' Ah' : '—' }}</span>
+        <button class="settings-reset-btn" @click="resetAmpHours">RESET</button>
+      </div>
+
+      <div class="settings-section">Calibration</div>
+      <button class="settings-link" disabled>Compass calibration</button>
+      <button class="settings-link" disabled>Motor calibration</button>
+      <button class="settings-link" disabled>Sea trial / auto-tune</button>
+
+      <div class="settings-section">About</div>
+      <div class="settings-row">
+        <span class="settings-row-label">App</span>
+        <span class="settings-val">pypilot OneHelm</span>
+      </div>
+      <div class="settings-row">
+        <span class="settings-row-label">Pilot</span>
+        <span class="settings-val">{{ st.pilot || '—' }}</span>
+      </div>
+      <div class="settings-row">
+        <span class="settings-row-label">Version</span>
+        <span class="settings-val">{{ st.version || '1.1.0' }}</span>
+      </div>
+    </div>
+    <div class="overlay-footer">
+      <button class="overlay-back-btn" @click="closeSettings">◀ BACK</button>
+    </div>
+  </div>
+
+  <!-- Profile overlay -->
+  <div id="profile-overlay" class="side-overlay" :class="{ open: st.showProfile }">
+    <div class="overlay-header"><span>SELECT PROFILE</span></div>
+    <div id="profile-body">
+      <button v-for="p in st.gainProfiles" :key="p"
+              class="profile-option-btn"
+              :class="{ active: st.gainProfile === p }"
+              @click="selectProfile(p)">
+        {{ p.replace(/_/g, ' ').toUpperCase() }}
+      </button>
+    </div>
+    <div class="overlay-footer">
+      <button class="overlay-back-btn" @click="closeProfile">◀ BACK</button>
+    </div>
   </div>
 
 </div><!-- /app -->
 
-<!-- Gains overlay -->
-<div id="gains-overlay">
-  <div id="gains-header">
-    <span>GAIN SETTINGS</span>
-    <button id="gains-close" onclick="closeGains()">✕ CLOSE</button>
-  </div>
-  <div id="gains-body">
-
-    <div class="gain-row">
-      <div class="gain-label">P<span class="gain-desc">Proportional</span></div>
-      <div class="gain-val" id="gv-P">—</div>
-      <input class="gain-slider" id="gs-P" type="range" min="0" max="3" step="0.01"
-             oninput="onGain('P', this.value)">
-      <div class="gain-max" id="gmax-P">3.0</div>
-    </div>
-
-    <div class="gain-row">
-      <div class="gain-label">I<span class="gain-desc">Integral</span></div>
-      <div class="gain-val" id="gv-I">—</div>
-      <input class="gain-slider" id="gs-I" type="range" min="0" max="1" step="0.01"
-             oninput="onGain('I', this.value)">
-      <div class="gain-max" id="gmax-I">1.0</div>
-    </div>
-
-    <div class="gain-row">
-      <div class="gain-label">D<span class="gain-desc">Derivative</span></div>
-      <div class="gain-val" id="gv-D">—</div>
-      <input class="gain-slider" id="gs-D" type="range" min="0" max="5" step="0.01"
-             oninput="onGain('D', this.value)">
-      <div class="gain-max" id="gmax-D">5.0</div>
-    </div>
-
-    <div class="gain-row">
-      <div class="gain-label">DD<span class="gain-desc">2nd Deriv.</span></div>
-      <div class="gain-val" id="gv-DD">—</div>
-      <input class="gain-slider" id="gs-DD" type="range" min="0" max="5" step="0.01"
-             oninput="onGain('DD', this.value)">
-      <div class="gain-max" id="gmax-DD">5.0</div>
-    </div>
-
-    <div class="gain-row">
-      <div class="gain-label">FF<span class="gain-desc">Feed Forward</span></div>
-      <div class="gain-val" id="gv-FF">—</div>
-      <input class="gain-slider" id="gs-FF" type="range" min="0" max="3" step="0.01"
-             oninput="onGain('FF', this.value)">
-      <div class="gain-max" id="gmax-FF">3.0</div>
-    </div>
-
-    <div class="gain-row">
-      <div class="gain-label">PR<span class="gain-desc">Prop. Roll</span></div>
-      <div class="gain-val" id="gv-PR">—</div>
-      <input class="gain-slider" id="gs-PR" type="range" min="0" max="5" step="0.01"
-             oninput="onGain('PR', this.value)">
-      <div class="gain-max" id="gmax-PR">5.0</div>
-    </div>
-
-  </div>
-</div>
-
+<script src="/app/vue.global.prod.js"></script>
 <script>
-// ── State ──────────────────────────────────────────────────────────────────
-const state = {
-  heading: 0,
-  course: 0,
-  mode: 'auto',
-  engaged: false,
-  wind_angle: null,
-  rudder_angle: null,
-  message: '',
-  gains: {},
+const { createApp, reactive, computed, onMounted, onUnmounted } = Vue;
+
+const MODES = [
+  { id: 'compass', label: 'COMPASS'  },
+  { id: 'gps',     label: 'GPS'      },
+  { id: 'wind',    label: 'APP WIND' },
+  { id: 'level',   label: 'TRUE WIND'},
+  { id: 'nav',     label: 'NAV'      },
+];
+
+const GAIN_ORDER = ['P', 'I', 'D', 'DD', 'FF', 'PR'];
+const GAIN_DESC  = {
+  P: 'Proportional', I: 'Integral', D: 'Derivative',
+  DD: '2nd Deriv.', FF: 'Feed Forward', PR: 'Prop. Roll',
 };
 
-// ── Compass setup ──────────────────────────────────────────────────────────
-function buildCompass() {
+function buildCompassTicks() {
   const ticks = document.getElementById('ticks');
   const cards = document.getElementById('cardinals');
 
   for (let deg = 0; deg < 360; deg += 5) {
-    const rad = (deg - 90) * Math.PI / 180;
+    const rad     = (deg - 90) * Math.PI / 180;
     const isMajor = deg % 30 === 0;
     const isMed   = deg % 10 === 0;
     const r1 = 143;
     const r2 = isMajor ? 118 : isMed ? 126 : 132;
-    const x1 = Math.cos(rad) * r1;
-    const y1 = Math.sin(rad) * r1;
-    const x2 = Math.cos(rad) * r2;
-    const y2 = Math.sin(rad) * r2;
-
-    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    const x1 = Math.cos(rad) * r1, y1 = Math.sin(rad) * r1;
+    const x2 = Math.cos(rad) * r2, y2 = Math.sin(rad) * r2;
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     line.setAttribute('x1', x1); line.setAttribute('y1', y1);
     line.setAttribute('x2', x2); line.setAttribute('y2', y2);
     line.setAttribute('stroke', isMajor ? '#4a8aaa' : '#1e4060');
     line.setAttribute('stroke-width', isMajor ? '2' : '1');
     ticks.appendChild(line);
 
-    if (isMajor && deg % 30 === 0) {
+    if (isMajor) {
       const tr = 108;
-      const tx = Math.cos(rad) * tr;
-      const ty = Math.sin(rad) * tr;
-      const label = document.createElementNS('http://www.w3.org/2000/svg','text');
-      label.setAttribute('x', tx); label.setAttribute('y', ty);
-      label.setAttribute('text-anchor', 'middle');
-      label.setAttribute('dominant-baseline', 'central');
-      label.setAttribute('fill', '#3a7090');
-      label.setAttribute('font-size', '12');
-      label.setAttribute('font-family', 'Arial');
-      label.setAttribute('transform', `rotate(${deg},${tx},${ty})`);
-      label.textContent = String(deg).padStart(3,'0');
-      ticks.appendChild(label);
+      const tx = Math.cos(rad) * tr, ty = Math.sin(rad) * tr;
+      const lbl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      lbl.setAttribute('x', tx); lbl.setAttribute('y', ty);
+      lbl.setAttribute('text-anchor', 'middle');
+      lbl.setAttribute('dominant-baseline', 'central');
+      lbl.setAttribute('fill', '#3a7090');
+      lbl.setAttribute('font-size', '12');
+      lbl.setAttribute('font-family', 'Arial');
+      lbl.setAttribute('transform', `rotate(${deg},${tx},${ty})`);
+      lbl.textContent = String(deg).padStart(3, '0');
+      ticks.appendChild(lbl);
     }
   }
 
-  const compass_pts = [
+  [
     [0,   'N',  '#ff4444', 20],
-    [90,  'E',  '#cde4f5', 16],
-    [180, 'S',  '#cde4f5', 16],
-    [270, 'W',  '#cde4f5', 16],
+    [90,  'E',  '#e8f4ff', 16],
+    [180, 'S',  '#e8f4ff', 16],
+    [270, 'W',  '#e8f4ff', 16],
     [45,  'NE', '#8ab8d0', 13],
     [135, 'SE', '#8ab8d0', 13],
     [225, 'SW', '#8ab8d0', 13],
     [315, 'NW', '#8ab8d0', 13],
-  ];
-
-  compass_pts.forEach(([deg, label, fill, size]) => {
+  ].forEach(([deg, label, fill, size]) => {
     const rad = (deg - 90) * Math.PI / 180;
-    const r = 88;
-    const tx = Math.cos(rad) * r;
-    const ty = Math.sin(rad) * r;
-    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    const r   = 88;
+    const tx  = Math.cos(rad) * r, ty = Math.sin(rad) * r;
+    const t   = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     t.setAttribute('x', tx); t.setAttribute('y', ty);
     t.setAttribute('text-anchor', 'middle');
     t.setAttribute('dominant-baseline', 'central');
@@ -695,222 +1003,276 @@ function buildCompass() {
   });
 }
 
-buildCompass();
-buildRudderTicks();
 
-// ── Rudder gauge setup ─────────────────────────────────────────────────────
-function buildRudderTicks() {
-  const g = document.getElementById('rudder-ticks');
-  // Rudder arc spans -90° to +90° mapped to visual 180° semicircle
-  // 0° rudder = top of arc (270° in SVG), each rudder degree = 1 SVG degree
-  for (let rdeg = -45; rdeg <= 45; rdeg += 15) {
-    if (rdeg === 0) continue;
-    const svgDeg = rdeg - 90; // rotate: -90 maps rudder 0 to top
-    const rad = svgDeg * Math.PI / 180;
-    const r1 = 100, r2 = 92;
-    const x1 = Math.cos(rad) * r1, y1 = Math.sin(rad) * r1;
-    const x2 = Math.cos(rad) * r2, y2 = Math.sin(rad) * r2;
-    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
-    line.setAttribute('x1',x1); line.setAttribute('y1',y1);
-    line.setAttribute('x2',x2); line.setAttribute('y2',y2);
-    line.setAttribute('stroke','#2a5070'); line.setAttribute('stroke-width','1.5');
-    g.appendChild(line);
-  }
-}
+createApp({
+  setup() {
+    const st = reactive({
+      // Core navigation
+      heading: 0, course: 0, mode: 'compass', engaged: false,
+      windAngle: null, windSpeed: null, rudderAngle: null,
+      message: 'Waiting for pypilot…',
+      // Dynamic mode list from server
+      modes: ['compass', 'gps', 'wind', 'level', 'nav'],
+      // Tacking
+      tackState: 'none', tackDirection: '',
+      // Gains & profiles
+      gains: {}, gainProfile: 'default', gainProfiles: ['default'],
+      // Navigation (NAV mode waypoint data)
+      navDtw: null, navBtw: null, navXte: null,
+      // Servo / motor
+      servoState: '', servoController: '',
+      servoVoltage: null, servoWatts: null,
+      servoFlags: '', servoAmpHours: null,
+      // IMU
+      imuPitch: null, imuRoll: null,
+      imuHeadingOffset: 0.0,
+      imuError: '', imuUptime: '',
+      // System info
+      version: '', pilot: '',
+      pypilotHost: '', pypilotPort: '',
+      // UI state
+      wsConnected: false, showGains: false, showSettings: false, showProfile: false,
+    });
 
-// rudder angle → SVG arc path (0° = straight, + = stbd, - = port)
-function rudderArcPath(angle) {
-  const clamped = Math.max(-45, Math.min(45, angle));
-  if (Math.abs(clamped) < 0.5) return '';
-  const r = 100;
-  // Center of arc is at top (SVG angle -90°). Rudder 0 maps to -90°.
-  const startDeg = -90;
-  const endDeg   = startDeg + clamped;
-  const startRad = startDeg * Math.PI / 180;
-  const endRad   = endDeg   * Math.PI / 180;
-  const x1 = Math.cos(startRad) * r, y1 = Math.sin(startRad) * r;
-  const x2 = Math.cos(endRad)   * r, y2 = Math.sin(endRad)   * r;
-  const largeArc = Math.abs(clamped) > 180 ? 1 : 0;
-  const sweep    = clamped > 0 ? 1 : 0;
-  return `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} ${sweep} ${x2} ${y2}`;
-}
+    const hdgDisplay = computed(() => Math.round(st.heading).toString().padStart(3, '0') + '°');
+    const crsDisplay = computed(() => Math.round(st.course).toString().padStart(3, '0') + '°');
 
-// ── Render ──────────────────────────────────────────────────────────────────
-function render() {
-  const disc = document.getElementById('disc');
-  disc.setAttribute('transform', `rotate(${-state.heading})`);
+    const error = computed(() => {
+      let e = st.course - st.heading;
+      if (e >  180) e -= 360;
+      if (e < -180) e += 360;
+      return e;
+    });
 
-  document.getElementById('hdg-val').textContent =
-    Math.round(state.heading).toString().padStart(3,'0');
-  document.getElementById('crs-val').textContent =
-    Math.round(state.course).toString().padStart(3,'0');
+    const errorDisplay = computed(() => {
+      const e = error.value;
+      return (e >= 0 ? '+' : '') + e.toFixed(1) + '°';
+    });
 
-  let err = state.course - state.heading;
-  if (err > 180)  err -= 360;
-  if (err < -180) err += 360;
-  const errEl = document.getElementById('err-val');
-  errEl.textContent = (err >= 0 ? '+' : '') + err.toFixed(1) + '°';
-  errEl.style.color = Math.abs(err) < 3 ? 'var(--green)' :
-                      Math.abs(err) < 10 ? 'var(--amber)' : 'var(--red)';
+    const errorColor = computed(() => {
+      const a = Math.abs(error.value);
+      return a < 3 ? 'var(--green)' : a < 10 ? 'var(--amber)' : 'var(--red)';
+    });
 
-  // Course pointer: offset from heading
-  const courseOffset = state.course - state.heading;
-  const cp = document.getElementById('course-pointer');
-  cp.setAttribute('transform', `rotate(${courseOffset})`);
+    const statusColor = computed(() => {
+      if (!st.engaged) return 'var(--dim)';
+      if (st.message.includes('course')) return 'var(--green)';
+      if (st.message.includes('Large'))  return 'var(--red)';
+      return 'var(--amber)';
+    });
 
-  // Wind indicator
-  const wi = document.getElementById('wind-indicator');
-  if (state.wind_angle !== null) {
-    wi.setAttribute('opacity', '1');
-    wi.setAttribute('transform', `rotate(${state.wind_angle})`);
-  } else {
-    wi.setAttribute('opacity', '0');
-  }
+    const discTransform          = computed(() => `rotate(${-st.heading})`);
+    const coursePointerTransform = computed(() => `rotate(${st.course - st.heading})`);
+    const windOpacity            = computed(() => st.windAngle !== null ? '1' : '0');
+    const windTransform          = computed(() => `rotate(${st.windAngle ?? 0})`);
 
-  // Engage button
-  const engBtn = document.getElementById('engage-btn');
-  if (state.engaged) {
-    engBtn.textContent = 'ENGAGED';
-    engBtn.classList.add('engaged');
-  } else {
-    engBtn.textContent = 'STANDBY';
-    engBtn.classList.remove('engaged');
-  }
+    // horizontal bar fill: 1° = 2px, range ±45° = ±90px
+    const rudderFillX = computed(() => {
+      const r = Math.max(-45, Math.min(0, st.rudderAngle ?? 0));
+      return r / 45 * 90;
+    });
+    const rudderFillW = computed(() => {
+      return Math.min(90, Math.abs(st.rudderAngle ?? 0) / 45 * 90);
+    });
 
-  // Mode buttons
-  document.querySelectorAll('.mode-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.mode === state.mode);
-  });
+    const rudderDisplay = computed(() => {
+      const r = st.rudderAngle;
+      if (r === null) return '--°';
+      return (r > 0.5 ? '+' : '') + r.toFixed(1) + '°';
+    });
 
-  // Status strip
-  if (state.message) {
-    const strip = document.getElementById('status-strip');
-    strip.textContent = state.message;
-    strip.style.color = !state.engaged         ? 'var(--dim)'   :
-                        state.message.includes('course') ? 'var(--green)' :
-                        state.message.includes('Large')  ? 'var(--red)'   : 'var(--amber)';
-  }
+    const rudderValColor = computed(() => {
+      const r = st.rudderAngle;
+      if (r === null) return '#8aaacc';
+      return r < -1 ? '#ff6060' : r > 1 ? '#00ff88' : '#8aaacc';
+    });
 
-  // Gains overlay (only update sliders if page is open)
-  if (document.getElementById('gains-overlay').classList.contains('open')) renderGains();
+    // Pitch / roll attitude strip
+    const pitchDisplay = computed(() => {
+      const p = st.imuPitch;
+      if (p === null) return '—';
+      return (p >= 0 ? '+' : '') + p.toFixed(1) + '°';
+    });
+    const rollDisplay = computed(() => {
+      const r = st.imuRoll;
+      if (r === null) return '—';
+      return (r >= 0 ? '+' : '') + r.toFixed(1) + '°';
+    });
+    const pitchColor = computed(() => Math.abs(st.imuPitch ?? 0) > 15 ? 'var(--amber)' : '#7ab8d8');
+    const rollColor  = computed(() => Math.abs(st.imuRoll  ?? 0) > 20 ? 'var(--amber)' : '#7ab8d8');
 
-  // Rudder gauge
-  const rudder = state.rudder_angle;
-  if (rudder !== null) {
-    const needle = document.getElementById('rudder-needle');
-    needle.setAttribute('transform', `rotate(${rudder})`);
+    // Wind displays
+    const windAngleDisplay = computed(() => {
+      const a = st.windAngle;
+      if (a === null) return '--°';
+      // Show as relative angle 0-180 with P/S side indicator
+      const deg = ((a % 360) + 360) % 360;
+      if (deg <= 180) return deg.toFixed(0) + '° S';
+      return (360 - deg).toFixed(0) + '° P';
+    });
+    const windSpeedDisplay = computed(() => {
+      const s = st.windSpeed;
+      return s !== null ? s.toFixed(1) + ' kn' : '-- kn';
+    });
 
-    const arc   = document.getElementById('rudder-arc');
-    const path  = rudderArcPath(rudder);
-    arc.setAttribute('d', path);
-    arc.setAttribute('stroke', rudder < 0 ? '#ff6060' : '#00e676');
+    // Navigation displays
+    const navBtwDisplay = computed(() => {
+      const b = st.navBtw;
+      return b !== null ? Math.round(b).toString().padStart(3, '0') + '°' : '---°';
+    });
+    const navDtwDisplay = computed(() => {
+      const d = st.navDtw;
+      if (d === null) return '—';
+      return d >= 10 ? d.toFixed(1) + ' nm' : d.toFixed(2) + ' nm';
+    });
+    const navXteDisplay = computed(() => {
+      const x = st.navXte;
+      if (x === null) return '—';
+      const side = x >= 0 ? 'S' : 'P';
+      return Math.abs(x).toFixed(3) + ' ' + side;
+    });
+    const xteColor = computed(() => {
+      const x = Math.abs(st.navXte ?? 0);
+      return x < 0.02 ? 'var(--green)' : x < 0.1 ? 'var(--amber)' : 'var(--red)';
+    });
 
-    const valEl = document.getElementById('rudder-val');
-    const sign  = rudder > 0.5 ? '+' : '';
-    valEl.textContent = sign + rudder.toFixed(1) + '°';
-    valEl.setAttribute('fill', rudder < -1 ? '#ff6060' : rudder > 1 ? '#00e676' : 'var(--dim)');
-  }
-}
+    const orderedGains = computed(() => GAIN_ORDER.filter(n => st.gains[n]));
 
-// ── WebSocket ───────────────────────────────────────────────────────────────
-let ws = null;
-let reconnectTimer = null;
+    // Filter MODES to only those the server reports as available
+    const availableModes = computed(() =>
+      MODES.filter(m => st.modes.includes(m.id))
+    );
 
-function connect() {
-  ws = new WebSocket('ws://' + location.host + '/ws');
-  const statusEl = document.getElementById('ws-status');
+    let ws = null, reconnectTimer = null;
+    const gainsDirty = {}, gainTimers = {};
 
-  ws.onopen = () => {
-    statusEl.textContent = 'ONLINE';
-    statusEl.classList.add('connected');
-    clearTimeout(reconnectTimer);
-  };
+    function connect() {
+      const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(proto + '//' + location.host + '/ws');
 
-  ws.onclose = () => {
-    statusEl.textContent = 'OFFLINE';
-    statusEl.classList.remove('connected');
-    reconnectTimer = setTimeout(connect, 3000);
-  };
+      ws.onopen  = () => { st.wsConnected = true;  clearTimeout(reconnectTimer); };
+      ws.onclose = () => { st.wsConnected = false; reconnectTimer = setTimeout(connect, 3000); };
+      ws.onerror = () => ws.close();
 
-  ws.onerror = () => ws.close();
-
-  ws.onmessage = (ev) => {
-    const d = JSON.parse(ev.data);
-    if (d.heading      !== undefined) state.heading      = d.heading;
-    if (d.course       !== undefined) state.course       = d.course;
-    if (d.mode         !== undefined) state.mode         = d.mode;
-    if (d.engaged      !== undefined) state.engaged      = d.engaged;
-    if (d.wind_angle   !== undefined) state.wind_angle   = d.wind_angle;
-    if (d.rudder_angle !== undefined) state.rudder_angle = d.rudder_angle;
-    if (d.message      !== undefined) state.message      = d.message;
-    if (d.gains        !== undefined) state.gains        = d.gains;
-    render();
-  };
-}
-
-function sendCmd(type, value) {
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify(value !== undefined ? {cmd: type, value} : {cmd: type}));
-  }
-}
-
-// ── Controls ────────────────────────────────────────────────────────────────
-function toggleEngage() {
-  sendCmd(state.engaged ? 'standby' : 'engage');
-}
-
-function setMode(mode) {
-  sendCmd('mode', mode);
-}
-
-function adjust(delta) {
-  sendCmd('adjust', delta);
-}
-
-// ── Gains page ───────────────────────────────────────────────────────────────
-let gainsDirty = {};   // slider being dragged — don't overwrite from server
-
-function openGains()  {
-  document.getElementById('gains-overlay').classList.add('open');
-  renderGains();
-}
-function closeGains() { document.getElementById('gains-overlay').classList.remove('open'); gainsDirty = {}; }
-
-function renderGains() {
-  const gains = state.gains;
-  ['P', 'I', 'D', 'DD', 'FF', 'PR'].forEach(n => {
-    const g = gains[n];
-    if (!g) return;
-    const slider = document.getElementById('gs-' + n);
-    const valEl  = document.getElementById('gv-' + n);
-    const maxEl  = document.getElementById('gmax-' + n);
-    slider.min = g.min ?? 0;
-    slider.max = g.max ?? 5;
-    maxEl.textContent = (g.max ?? 5).toFixed(2);
-    if (!gainsDirty[n] && g.value !== null && g.value !== undefined) {
-      slider.value      = g.value;
-      valEl.textContent = parseFloat(g.value).toFixed(2);
+      ws.onmessage = (ev) => {
+        const d = JSON.parse(ev.data);
+        if (d.heading            !== undefined) st.heading           = d.heading;
+        if (d.course             !== undefined) st.course            = d.course;
+        if (d.mode               !== undefined) st.mode              = d.mode;
+        if (d.modes              !== undefined) st.modes             = d.modes;
+        if (d.engaged            !== undefined) st.engaged           = d.engaged;
+        if (d.wind_angle         !== undefined) st.windAngle         = d.wind_angle;
+        if (d.wind_speed         !== undefined) st.windSpeed         = d.wind_speed;
+        if (d.rudder_angle       !== undefined) st.rudderAngle       = d.rudder_angle;
+        if (d.tack_state         !== undefined) st.tackState         = d.tack_state;
+        if (d.tack_direction     !== undefined) st.tackDirection     = d.tack_direction;
+        if (d.message            !== undefined) st.message           = d.message;
+        if (d.profile            !== undefined) st.gainProfile       = d.profile;
+        if (d.profiles           !== undefined) st.gainProfiles      = d.profiles;
+        if (d.nav_dtw            !== undefined) st.navDtw            = d.nav_dtw;
+        if (d.nav_btw            !== undefined) st.navBtw            = d.nav_btw;
+        if (d.nav_xte            !== undefined) st.navXte            = d.nav_xte;
+        if (d.servo_state        !== undefined) st.servoState        = d.servo_state;
+        if (d.servo_controller   !== undefined) st.servoController   = d.servo_controller;
+        if (d.servo_voltage      !== undefined) st.servoVoltage      = d.servo_voltage;
+        if (d.servo_watts        !== undefined) st.servoWatts        = d.servo_watts;
+        if (d.servo_flags        !== undefined) st.servoFlags        = d.servo_flags;
+        if (d.servo_amp_hours    !== undefined) st.servoAmpHours     = d.servo_amp_hours;
+        if (d.imu_pitch          !== undefined) st.imuPitch          = d.imu_pitch;
+        if (d.imu_roll           !== undefined) st.imuRoll           = d.imu_roll;
+        if (d.imu_heading_offset !== undefined) st.imuHeadingOffset  = d.imu_heading_offset;
+        if (d.imu_error          !== undefined) st.imuError          = d.imu_error;
+        if (d.imu_uptime         !== undefined) st.imuUptime         = d.imu_uptime;
+        if (d.version            !== undefined) st.version           = d.version;
+        if (d.pilot              !== undefined) st.pilot             = d.pilot;
+        if (d.pypilot_host       !== undefined) st.pypilotHost       = d.pypilot_host;
+        if (d.pypilot_port       !== undefined) st.pypilotPort       = d.pypilot_port;
+        if (d.gains) {
+          for (const [name, g] of Object.entries(d.gains)) {
+            if (!st.gains[name]) st.gains[name] = { ...g };
+            else {
+              st.gains[name].min = g.min;
+              st.gains[name].max = g.max;
+              if (!gainsDirty[name]) st.gains[name].value = g.value;
+            }
+          }
+        }
+      };
     }
-  });
-}
 
-let gainTimers = {};
-function onGain(name, raw) {
-  const val = parseFloat(raw);
-  gainsDirty[name] = true;
-  document.getElementById('gv-' + name).textContent = val.toFixed(2);
-  clearTimeout(gainTimers[name]);
-  gainTimers[name] = setTimeout(() => {
-    if (ws && ws.readyState === WebSocket.OPEN)
-      ws.send(JSON.stringify({cmd: 'gain', name, value: val}));
-    gainsDirty[name] = false;
-  }, 150);
-}
+    function sendCmd(type, value) {
+      if (ws && ws.readyState === WebSocket.OPEN)
+        ws.send(JSON.stringify(value !== undefined ? { cmd: type, value } : { cmd: type }));
+    }
 
-// ── Init ─────────────────────────────────────────────────────────────────────
-render();
-connect();
+    function toggleEngage()          { sendCmd(st.engaged ? 'standby' : 'engage'); }
+    function setMode(m)              { sendCmd('mode', m); }
+    function adjust(delta)           { sendCmd('adjust', delta); }
+    function setProfile(val)         { sendCmd('profile', val); }
+    function adjustHeadingOffset(d)  { sendCmd('heading_offset', d); }
+    function resetAmpHours()         { sendCmd('reset_amp_hours'); }
+
+    function gainActive(name) {
+      const g = st.gains[name];
+      return !!(g && g.value !== null && st.engaged && g.value > 0);
+    }
+
+    function openGains()     { st.showGains = true;  st.showSettings = false; st.showProfile = false; }
+    function closeGains()    { st.showGains = false; Object.keys(gainsDirty).forEach(k => { gainsDirty[k] = false; }); }
+    function openSettings()  { st.showSettings = true;  st.showGains = false; st.showProfile = false; }
+    function closeSettings() { st.showSettings = false; }
+    function openProfile()   { st.showProfile = true; st.showGains = false; st.showSettings = false; }
+    function closeProfile()  { st.showProfile = false; }
+    function selectProfile(p){ setProfile(p); closeProfile(); }
+    function closeAll()      { st.showGains = false; st.showSettings = false; st.showProfile = false; }
+
+    function onGain(name, raw) {
+      const val = parseFloat(raw);
+      gainsDirty[name] = true;
+      if (st.gains[name]) st.gains[name].value = val;
+      clearTimeout(gainTimers[name]);
+      gainTimers[name] = setTimeout(() => {
+        if (ws && ws.readyState === WebSocket.OPEN)
+          ws.send(JSON.stringify({ cmd: 'gain', name, value: val }));
+        gainsDirty[name] = false;
+      }, 150);
+    }
+
+    function stepGain(name, delta) {
+      if (!st.gains[name] || st.gains[name].value === null) return;
+      const min = st.gains[name].min;
+      const max = st.gains[name].max;
+      const raw = parseFloat((st.gains[name].value + delta).toFixed(3));
+      const val = Math.min(max, Math.max(min, raw));
+      gainsDirty[name] = true;
+      st.gains[name].value = val;
+      clearTimeout(gainTimers[name]);
+      gainTimers[name] = setTimeout(() => {
+        if (ws && ws.readyState === WebSocket.OPEN)
+          ws.send(JSON.stringify({ cmd: 'gain', name, value: val }));
+        gainsDirty[name] = false;
+      }, 150);
+    }
+
+    onMounted(() => { buildCompassTicks(); connect(); });
+    onUnmounted(() => { clearTimeout(reconnectTimer); if (ws) ws.close(); });
+
+    return {
+      st, MODES, GAIN_DESC, orderedGains, availableModes,
+      hdgDisplay, crsDisplay, errorDisplay, errorColor, statusColor,
+      discTransform, coursePointerTransform, windOpacity, windTransform,
+      rudderFillX, rudderFillW, rudderDisplay, rudderValColor,
+      pitchDisplay, rollDisplay, pitchColor, rollColor,
+      windAngleDisplay, windSpeedDisplay,
+      navBtwDisplay, navDtwDisplay, navXteDisplay, xteColor,
+      sendCmd, toggleEngage, setMode, adjust, setProfile, gainActive,
+      adjustHeadingOffset, resetAmpHours,
+      openGains, closeGains, openSettings, closeSettings,
+      openProfile, closeProfile, selectProfile,
+      closeAll, onGain, stepGain,
+    };
+  }
+}).mount('#app');
 </script>
-
 </body>
 </html>
